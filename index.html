@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Bravery — Randomizer LoL</title>
+<meta name="description" content="Tire au sort une équipe League of Legends complète : champions, runes, sorts d'invocateur et build, avec thèmes et synergies.">
+<link rel="icon" href="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/icon-position-fill.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060b16; --bg2:#0a1428; --panel:#0e1a2f; --panel2:#13223b; --line:#1e2d4a; --line2:#2b3f63;
+  --gold:#c8aa6e; --gold2:#f0e6d2; --gold-dim:#785a28; --blue:#0ac8b9; --blue-dim:#0a5e66;
+  --text:#e6e0d0; --muted:#8b96a8; --red:#e84057; --redteam:#d1495b; --blueteam:#3a8dde;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:radial-gradient(ellipse at top,#0d1d38 0%,var(--bg) 60%) fixed,var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,sans-serif;min-height:100vh}
+button,select,input,textarea{font:inherit;color:inherit}
+img{display:block}
+.wrap{max-width:1320px;margin:0 auto;padding:20px 16px 60px}
+
+header{display:flex;flex-wrap:wrap;align-items:center;gap:16px 24px;justify-content:space-between;margin-bottom:18px}
+h1{font-family:Cinzel,serif;font-weight:800;font-size:clamp(26px,4vw,38px);letter-spacing:.04em;margin:0;color:var(--gold2);text-shadow:0 0 24px rgba(200,170,110,.25)}
+h1 span{color:var(--gold)}
+.sub{color:var(--muted);margin:2px 0 0;font-size:13px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+.btn{border:1px solid var(--line2);background:var(--panel2);border-radius:8px;padding:9px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:border-color .15s,background .15s,transform .1s}
+.btn:hover{border-color:var(--gold)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#1b6e74,#0a3f4a);border:2px solid var(--blue);color:#eafffd;font-family:Cinzel,serif;font-weight:800;letter-spacing:.06em;font-size:17px;padding:12px 26px;box-shadow:0 0 18px rgba(10,200,185,.25)}
+.btn.primary:hover{box-shadow:0 0 26px rgba(10,200,185,.45);border-color:#5ff2e6}
+.btn.small{padding:5px 9px;font-size:12px;border-radius:6px}
+.btn:disabled{opacity:.5;cursor:wait}
+
+details.opts{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:18px}
+details.opts summary{cursor:pointer;padding:12px 16px;font-weight:600;color:var(--gold);list-style:none;display:flex;align-items:center;gap:8px;user-select:none}
+details.opts summary::-webkit-details-marker{display:none}
+details.opts summary::before{content:"▸";transition:transform .15s}
+details.opts[open] summary::before{transform:rotate(90deg)}
+.optgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px 22px;padding:4px 16px 16px}
+.opt label.t{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.opt select,.opt textarea{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:7px;padding:8px 10px}
+.opt textarea{min-height:88px;resize:vertical}
+.check{display:flex;gap:8px;align-items:flex-start;margin:6px 0;cursor:pointer}
+.check input{accent-color:var(--blue);margin-top:3px}
+.check small{display:block;color:var(--muted);font-size:12px}
+.hist{font-size:12px;color:var(--muted);margin-top:4px}
+.hist button{background:none;border:0;color:var(--blue);cursor:pointer;padding:0;text-decoration:underline}
+
+.team{margin-bottom:26px}
+.teamhead{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:10px;padding:10px 14px;border-radius:var(--r);background:linear-gradient(90deg,rgba(200,170,110,.12),transparent);border-left:3px solid var(--gold)}
+.team.blue .teamhead{border-left-color:var(--blueteam);background:linear-gradient(90deg,rgba(58,141,222,.16),transparent)}
+.team.red .teamhead{border-left-color:var(--redteam);background:linear-gradient(90deg,rgba(209,73,91,.16),transparent)}
+.teamhead h2{font-family:Cinzel,serif;font-size:18px;margin:0;color:var(--gold2)}
+.tag{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line2);color:var(--gold2)}
+.tag.duo{border-color:var(--blue-dim);color:#9ff5ec}
+.teamhead .desc{color:var(--muted);font-size:13px;flex-basis:100%}
+
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+@media (max-width:1150px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;position:relative;transition:border-color .2s}
+.card.locked{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-dim) inset}
+.art{position:relative;height:230px;overflow:hidden;background:#000}
+.art img.splash{width:100%;height:100%;object-fit:cover;object-position:center 18%;transition:transform .4s}
+.card:hover .art img.splash{transform:scale(1.03)}
+.art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,11,22,.55) 0%,transparent 28%,transparent 55%,var(--panel) 100%);pointer-events:none}
+.role{position:absolute;top:8px;left:8px;z-index:2;display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--gold2)}
+.role img{width:22px;height:22px}
+.player{position:absolute;top:8px;right:8px;z-index:2;max-width:55%;font-size:12px;font-weight:600;background:rgba(6,11,22,.75);border:1px solid var(--gold-dim);color:var(--gold2);padding:2px 8px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cname{position:absolute;bottom:6px;left:10px;right:10px;z-index:2}
+.cname b{font-family:Cinzel,serif;font-size:19px;color:var(--gold2);display:block;line-height:1.15;text-shadow:0 2px 6px #000}
+.cname i{font-style:normal;font-size:12px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spin{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;background:rgba(6,11,22,.88);transition:opacity .25s}
+.spin img{width:76px;height:76px;border-radius:50%;border:2px solid var(--gold);box-shadow:0 0 20px rgba(200,170,110,.4)}
+.spin.done{opacity:0;pointer-events:none}
+.reroll-champ{position:absolute;bottom:8px;right:8px;z-index:4}
+
+.body{padding:8px 10px 10px;display:flex;flex-direction:column;gap:9px;flex:1}
+.sec{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sec .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);width:100%;display:flex;justify-content:space-between;align-items:center}
+.ico{width:30px;height:30px;border-radius:5px;border:1px solid var(--line2);background:#000}
+.ico.sm{width:22px;height:22px;border-radius:50%;border-color:transparent;background:transparent}
+.ico.tree{width:18px;height:18px;border:0;background:transparent;opacity:.85}
+.ico.ks{width:38px;height:38px;border-radius:50%;border:1px solid var(--gold-dim);background:#000}
+.ico.shard{width:16px;height:16px;border-radius:50%;border:1px solid var(--line2);background:#0b0f18;padding:1px}
+.runes{display:flex;align-items:center;gap:8px}
+.runes .col{display:flex;flex-direction:column;gap:3px}
+.runes .row{display:flex;gap:3px;align-items:center}
+.runes .ksname{font-size:12px;font-weight:600;color:var(--gold2);line-height:1.2}
+.items{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;width:100%}
+.items img{width:100%;height:auto;aspect-ratio:1;border-radius:4px;border:1px solid var(--line2)}
+.mini{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:0 2px;line-height:1}
+.mini:hover{color:var(--blue)}
+.defi{font-size:12px;background:rgba(232,64,87,.08);border:1px dashed rgba(232,64,87,.45);border-radius:6px;padding:6px 8px;color:#f3c3ca;cursor:pointer}
+.defi b{color:#ff8a9a}
+.foot{display:flex;gap:6px;margin-top:auto;padding-top:4px}
+.foot .btn{flex:1;justify-content:center}
+.btn.lock.on{border-color:var(--gold);color:var(--gold);background:rgba(200,170,110,.12)}
+
+.status{text-align:center;padding:60px 16px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(30px);background:var(--panel2);border:1px solid var(--gold);color:var(--gold2);padding:10px 16px;border-radius:8px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{color:var(--muted);font-size:11px;text-align:center;margin-top:30px;line-height:1.6}
+footer a{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Team <span>Bravery</span></h1>
+      <p class="sub" id="patch">Chargement des données du jeu…</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="copyTxt" title="Copier le résultat en texte (pour Discord)">📋 Copier</button>
+      <button class="btn" id="share" title="Copier un lien qui affiche exactement ce tirage">🔗 Lien</button>
+      <button class="btn primary" id="go" disabled>🎲 GÉNÉRER</button>
+    </div>
+  </header>
+
+  <details class="opts" id="opts" open>
+    <summary>Options</summary>
+    <div class="optgrid">
+      <div class="opt">
+        <label class="t" for="theme">Thème de l'équipe</label>
+        <select id="theme"></select>
+        <label class="check"><input type="checkbox" id="duo"> <span>Synergie bot lane<small>ADC + support tirés parmi des duos qui marchent ensemble</small></span></label>
+        <label class="check"><input type="checkbox" id="roles" checked> <span>Respecter les rôles<small>Décoché : n'importe quel champion à n'importe quel poste</small></span></label>
+      </div>
+      <div class="opt">
+        <label class="t" for="sums">Sorts d'invocateur</label>
+        <select id="sums">
+          <option value="classic">Classique : Saut éclair + 1 aléatoire</option>
+          <option value="random">Totalement aléatoire</option>
+          <option value="noflash">Sans Saut éclair 😈</option>
+        </select>
+        <label class="check"><input type="checkbox" id="build" checked> <span>Build aléatoire<small>Bottes + 5 objets légendaires</small></span></label>
+        <label class="check"><input type="checkbox" id="defis"> <span>Défis fun<small>Une contrainte par joueur (clique dessus pour en changer)</small></span></label>
+      </div>
+      <div class="opt">
+        <label class="t" for="players">Joueurs (un par ligne, dans l'ordre Top → Support)</label>
+        <textarea id="players" placeholder="Pseudo 1&#10;Pseudo 2&#10;…"></textarea>
+        <label class="check"><input type="checkbox" id="shufflePlayers"> <span>Mélanger les joueurs dans les rôles</span></label>
+      </div>
+      <div class="opt">
+        <label class="t">Partie</label>
+        <label class="check"><input type="checkbox" id="twoTeams"> <span>Deux équipes (5v5 en partie perso)<small>10 joueurs, aucun champion en double</small></span></label>
+        <label class="check"><input type="checkbox" id="noRepeat"> <span>Pas de répétition<small>Évite les champions déjà tirés pendant la session</small></span></label>
+        <div class="hist" id="hist"></div>
+      </div>
+    </div>
+  </details>
+
+  <main id="out"><div class="status" id="status">Chargement…</div></main>
+
+  <footer>
+    Données et images : <a href="https://developer.riotgames.com/docs/lol#data-dragon" target="_blank" rel="noopener">Data Dragon</a> (Riot Games) et <a href="https://www.communitydragon.org/" target="_blank" rel="noopener">CommunityDragon</a>.<br>
+    Projet fan non officiel. Team Bravery n'est ni approuvé ni sponsorisé par Riot Games. League of Legends est une marque de Riot Games, Inc.
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const DD = 'https://ddragon.leagueoflegends.com';
+const CD_POS = 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/icon-position-';
+const LANG = 'fr_FR';
+
+const ROLES = [
+  {k:'top', n:'Top', icon:'top'},
+  {k:'jungle', n:'Jungle', icon:'jungle'},
+  {k:'mid', n:'Mid', icon:'middle'},
+  {k:'adc', n:'ADC', icon:'bottom'},
+  {k:'support', n:'Support', icon:'utility'},
+];
+
+/* ---------- Rôles par champion (les nouveaux champions non listés sont déduits de leurs tags) ---------- */
+const ROLE_LISTS = {
+  top: 'Aatrox Ambessa Akali Camille Chogath Darius DrMundo Fiora Gangplank Garen Gnar Gragas Gwen Heimerdinger Illaoi Irelia Jax Jayce KSante Kayle Kennen Kled Malphite Maokai MonkeyKing Mordekaiser Nasus Olaf Ornn Pantheon Poppy Quinn Renekton Riven Rumble Ryze Sett Shen Singed Sion Skarner Sylas TahmKench Teemo Trundle Tryndamere Udyr Urgot Vayne Vladimir Volibear Warwick Yasuo Yone Yorick Zaahen Zac Aurora Cassiopeia',
+  jungle: 'Amumu Belveth Briar Diana Ekko Elise Evelynn Fiddlesticks Gragas Graves Gwen Hecarim Ivern JarvanIV Jax Karthus Kayn Khazix Kindred LeeSin Lillia Maokai MasterYi MonkeyKing Naafiri Nidalee Nocturne Nunu Poppy Qiyana Rammus RekSai Rengar Sejuani Shaco Shyvana Skarner Talon Taliyah Trundle Udyr Vi Viego Volibear Warwick XinZhao Zac Zyra',
+  mid: 'Ahri Akali Akshan Anivia Annie AurelionSol Aurora Azir Brand Cassiopeia Corki Diana Ekko Fizz Galio Heimerdinger Hwei Irelia Jayce Kassadin Katarina Kayle Leblanc Lissandra Locke Lux Malphite Malzahar Mel Naafiri Neeko Orianna Pantheon Qiyana Ryze Smolder Swain Sylas Syndra Taliyah Talon Tristana TwistedFate Veigar Velkoz Vex Viktor Vladimir Xerath Yasuo Yone Zed Ziggs Zoe',
+  adc: 'Aphelios Ashe Caitlyn Corki Draven Ezreal Hwei Jhin Jinx Kaisa Kalista Karthus KogMaw Lucian MissFortune Nilah Samira Senna Seraphine Sivir Smolder Swain Tristana Twitch Varus Vayne Xayah Yunara Zeri Ziggs',
+  support: 'Alistar Bard Blitzcrank Brand Braum Camille Galio Hwei Janna Karma Leona Lulu Lux Maokai Mel Milio Morgana Nami Nautilus Neeko Pantheon Poppy Pyke Rakan Rell Renata Senna Seraphine Shaco Sona Soraka Swain TahmKench Taric Thresh Velkoz Xerath Yuumi Zilean Zyra',
+};
+const ROLE_MAP = {};
+for (const [r, s] of Object.entries(ROLE_LISTS)) for (const id of s.split(' ')) (ROLE_MAP[id] ||= []).push(r);
+
+const REGIONS = {
+  'Demacia': 'Garen Lux JarvanIV XinZhao Fiora Galio Quinn Shyvana Vayne Lucian Sona Poppy Kayle Morgana Sylas',
+  'Noxus': 'Darius Draven Katarina Swain Talon Cassiopeia Sion Samira Riven Kled Vladimir Leblanc Mordekaiser Briar Ambessa Mel Rell',
+  'Ionia': 'Ahri Akali Irelia Jhin Karma Kennen LeeSin MasterYi Shen Syndra Varus Xayah Rakan Yasuo Yone Zed Kayn Lillia Hwei Sett MonkeyKing Ivern Yunara',
+  'Freljord': 'Anivia Ashe Braum Gnar Gragas Lissandra Nunu Olaf Ornn Sejuani Trundle Tryndamere Udyr Volibear Aurora',
+  'Îles obscures': 'Gwen Hecarim Kalista Karthus Maokai Thresh Viego Yorick Elise Senna Vex',
+  'Le Néant': 'Belveth Chogath Kaisa Kassadin Khazix KogMaw Malzahar RekSai Velkoz',
+  'Bilgewater': 'Gangplank Graves Illaoi MissFortune Nautilus Pyke TahmKench TwistedFate Nilah Fizz',
+  'Piltover & Zaun': 'Caitlyn Vi Jayce Ekko Jinx Heimerdinger Ezreal Camille Orianna Seraphine Viktor Zeri Warwick Singed Twitch Urgot DrMundo Zac Blitzcrank Renata Janna Corki',
+  'Shurima': 'Azir Amumu Nasus Renekton Sivir Taliyah Xerath Akshan KSante Naafiri Rammus Skarner',
+  'Targon': 'Aphelios Diana Leona Pantheon Taric Zoe AurelionSol Soraka',
+  'Bandle (yordles)': 'Teemo Tristana Veigar Lulu Poppy Rumble Kennen Heimerdinger Corki Ziggs Gnar Kled Vex Yuumi Fizz Aurora',
+  'Ixtal': 'Qiyana Malphite Nidalee Neeko Rengar Zyra Milio Skarner',
+};
+for (const k in REGIONS) REGIONS[k] = REGIONS[k].split(' ');
+
+const P = s => s.split(' ');
+const THEMES = {
+  wombo:   {n:'Wombo combo', d:"Des ultis de zone qui s'enchaînent : un bon engage et le teamfight est plié.",
+            pools:{top:P('Malphite Gnar Sion Ornn KSante Kennen'), jungle:P('Amumu JarvanIV Sejuani Zac Diana Hecarim'), mid:P('Orianna Yasuo Yone Galio Lissandra Seraphine'), adc:P('MissFortune Samira Jinx Kaisa'), support:P('Leona Rell Alistar Nautilus Rakan Seraphine')}},
+  protect: {n:'Protect the carry', d:"Toute l'équipe vit pour garder l'ADC en vie. L'ADC n'a pas d'excuse.",
+            pools:{top:P('Ornn Shen KSante Maokai Poppy'), jungle:P('Ivern Sejuani Maokai Zac Rammus'), mid:P('Orianna Karma Lulu Seraphine Anivia'), adc:P('KogMaw Jinx Twitch Vayne Aphelios Yunara Zeri'), support:P('Lulu Janna Yuumi Milio Soraka Taric Renata')}},
+  poke:    {n:'Siège & poke', d:"On ne se bat jamais au contact. On grignote jusqu'à la tour.",
+            pools:{top:P('Jayce Kennen Teemo Rumble Gangplank'), jungle:P('Nidalee Elise Kindred Lillia Karthus'), mid:P('Xerath Ziggs Velkoz Zoe Hwei Jayce Lux Corki Mel'), adc:P('Ezreal Varus Caitlyn Jhin Ashe Sivir'), support:P('Karma Lux Xerath Velkoz Zyra Brand Janna')}},
+  global:  {n:'Ultis globales', d:"Toute la map est votre lane. Personne n'est en sécurité.",
+            pools:{top:P('Shen Gangplank Pantheon'), jungle:P('Nocturne Karthus'), mid:P('TwistedFate Ryze Galio Lux Ziggs Xerath'), adc:P('Jinx Ashe Ezreal Draven Senna'), support:P('Soraka Senna Pantheon Lux Bard')}},
+  invis:   {n:'Les invisibles', d:"Camouflage, furtivité et pinks qui ne servent à rien. Achetez des balises.",
+            pools:{top:P('Teemo Akali Vayne MonkeyKing'), jungle:P('Evelynn Shaco Khazix Rengar Twitch Talon'), mid:P('Akali Talon Leblanc Akshan Neeko'), adc:P('Twitch Vayne'), support:P('Pyke Neeko Shaco')}},
+  dive:    {n:'Dive & all-in', d:"On saute sur la backline à la première occasion. Réfléchir est interdit.",
+            pools:{top:P('Camille Irelia Renekton Rumble Ambessa'), jungle:P('JarvanIV XinZhao Vi Hecarim Nocturne'), mid:P('Diana Galio Akali Sylas Yone'), adc:P('Kaisa Samira Nilah Kalista'), support:P('Leona Rell Nautilus Alistar Rakan')}},
+  sustain: {n:'Les immortels', d:"Vol de vie, soins et régénération. Ils ne meurent jamais (en théorie).",
+            pools:{top:P('Aatrox Warwick DrMundo Vladimir Illaoi'), jungle:P('Warwick Briar Fiddlesticks Udyr'), mid:P('Vladimir Swain Sylas'), adc:P('Samira Swain Nilah Aphelios'), support:P('Soraka Yuumi Sona Milio Nami')}},
+  ap:      {n:'Full AP', d:"Que des dégâts magiques. La résistance magique adverse va adorer.", test:c => c.info.magic >= 7},
+  ad:      {n:'Full AD', d:"Que des dégâts physiques. Une seule Cotte épineuse et c'est la panique.", test:c => c.info.attack >= 7 && c.info.magic <= 4},
+  tanks:   {n:'Full tanks', d:"Cinq frigos. Personne ne fait de dégâts, mais personne ne meurt.", test:c => c.tags.includes('Tank')},
+  assassins:{n:'Full assassins', d:"Un-shot ou mourir. Souvent les deux.", test:c => c.tags.includes('Assassin')},
+  hard:    {n:'Mode souffrance', d:"Uniquement des champions de difficulté 8 ou plus. Bon courage.", test:c => c.info.difficulty >= 8},
+  easy:    {n:'Mode détente', d:"Uniquement des champions faciles (difficulté 3 ou moins). Zéro excuse.", test:c => c.info.difficulty <= 3},
+  region:  {n:'Mono-région', param:true},
+  letter:  {n:'Même initiale', param:true},
+};
+
+const DUOS = [
+  ['Xayah','Rakan','Les amoureux'], ['Lucian','Nami','Combo de vague'], ['Kalista','Thresh','Lien d\'âme'],
+  ['Draven','Blitzcrank','Haches et grappin'], ['Samira','Nautilus','All-in garanti'], ['Jhin','Zyra','Le 4e tir'],
+  ['KogMaw','Lulu','Hypercarry'], ['Twitch','Yuumi','Le chat furtif'], ['Caitlyn','Morgana','Pièges et racines'],
+  ['Ezreal','Karma','Poke infini'], ['Sivir','Yuumi','Tout le monde court'], ['Ashe','Braum','Freljord'],
+  ['MissFortune','Leona','Éclipse et salve'], ['Ziggs','Seraphine','Artillerie lourde'], ['Kaisa','Nautilus','Plongeon'],
+  ['Vayne','Lulu','La protégée'], ['Jinx','Janna','Rebond éternel'], ['Aphelios','Thresh','Lanterne lunaire'],
+  ['Zeri','Yuumi','Batterie chargée'], ['Nilah','Taric','Duo indestructible'], ['Tristana','Leona','Saut dans le tas'],
+  ['Seraphine','Sona','Le concert'], ['Yunara','Karma','Ionia unie'], ['Samira','Rell','Style maximum'],
+  ['Varus','Bard','Destin croisé'], ['Smolder','Milio','Le petit dragon'], ['Senna','TahmKench','Avalé, protégé'],
+];
+
+const DEFIS = [
+  "Interdit de rentrer à la base avant 10 minutes.", "Ton ulti ne sert qu'à finir un ennemi.",
+  "Tu dois acheter une Larme de la déesse en premier.", "Tu ne peux pas utiliser ton Flash, même s'il est là.",
+  "Tu suis le jungler partout dès qu'il passe dans ta lane.", "Tu ping « ? » à chaque fois que tu meurs.",
+  "Tu poses une balise de contrôle à chaque retour en base.", "Tu dances après chaque kill (ou mort).",
+  "Pas de Dague longue ni d'Épée longue au premier achat.", "Tu dois prendre le Héraut / Larve quoi qu'il arrive.",
+  "Tu joues sans afficher la minimap… à toi de te souvenir.", "Tu dois envoyer un « gg wp » sincère au top adverse.",
+  "Interdit de farmer le dernier sbire d'une vague.", "Tu ne te bats que sous une tour (alliée ou ennemie).",
+  "Toujours au moins 1 000 PO dans ta poche avant de backer.", "Tu annonces tous tes cooldowns dans le chat.",
+  "Tu dois tenter un steal de Baron ou de Drake.", "Pas d'achat de bottes avant ton deuxième objet.",
+  "Tu ne marches jamais seul : toujours à côté d'un allié après 15 min.", "Tu dois finir la partie avec au moins 3 sauvetages héroïques (annoncés).",
+];
+
+/* fragments (pas dans Data Dragon) */
+const SM = 'perk-images/StatMods/';
+const SHARD_DEFS = {
+  5008:{name:'Force adaptative', icon:SM+'StatModsAdaptiveForceIcon.png'},
+  5005:{name:"Vitesse d'attaque", icon:SM+'StatModsAttackSpeedIcon.png'},
+  5007:{name:'Accélération de compétence', icon:SM+'StatModsCDRScalingIcon.png'},
+  5010:{name:'Vitesse de déplacement', icon:SM+'StatModsMovementSpeedIcon.png'},
+  5001:{name:'PV (selon le niveau)', icon:SM+'StatModsHealthScalingIcon.png'},
+  5011:{name:'PV fixes', icon:SM+'StatModsHealthPlusIcon.png'},
+  5013:{name:'Ténacité et résistance au ralentissement', icon:SM+'StatModsTenacityIcon.png'},
+};
+const SHARD_ROWS = [[5008,5005,5007],[5008,5010,5001],[5011,5013,5001]];
+
+/* ---------- utilitaires ---------- */
+const $ = s => document.querySelector(s);
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800); };
+
+/* ---------- données ---------- */
+let V, CHAMPS = [], CH = {}, TREES = [], PERK = {}, SUMS = [], SUM = {}, BOOTS = [], LEG = [], ITEM = {};
+
+function rolesOf(c) {
+  if (ROLE_MAP[c.id]) return ROLE_MAP[c.id];
+  const t = c.tags, r = new Set();
+  if (t.includes('Marksman')) r.add('adc');
+  if (t.includes('Support')) r.add('support');
+  if (t.includes('Assassin')) { r.add('mid'); r.add('jungle'); }
+  if (t.includes('Mage')) r.add('mid');
+  if (t.includes('Fighter') || t.includes('Tank')) r.add('top');
+  return r.size ? [...r] : ['mid'];
+}
+
+async function loadData() {
+  const versions = await fetch(DD + '/api/versions.json').then(r => r.json());
+  V = versions[0];
+  const get = f => fetch(`${DD}/cdn/${V}/data/${LANG}/${f}.json`).then(r => { if (!r.ok) throw new Error(f); return r.json(); });
+  const [c, ru, su, it] = await Promise.all([get('champion'), get('runesReforged'), get('summoner'), get('item')]);
+
+  CHAMPS = Object.values(c.data).map(x => ({id:x.id, name:x.name, title:x.title, tags:x.tags, info:x.info}));
+  CHAMPS.forEach(x => { x.roles = rolesOf(x); CH[x.id] = x; });
+
+  TREES = ru;
+  for (const t of ru) for (const s of t.slots) for (const p of s.runes) PERK[p.id] = {name:p.name, icon:p.icon, tree:t.id};
+  for (const t of ru) PERK[t.id] = {name:t.name, icon:t.icon};
+  for (const [id, s] of Object.entries(SHARD_DEFS)) PERK['s' + id] = s;
+
+  SUMS = Object.values(su.data).filter(s => s.modes.includes('CLASSIC')).map(s => ({id:s.id, name:s.name}));
+  SUMS.forEach(s => SUM[s.id] = s);
+
+  const seen = new Set();
+  for (const [id, v] of Object.entries(it.data)) {
+    if (id.length > 4 || !v.maps?.['11'] || !v.gold?.purchasable || v.inStore === false || v.requiredChampion || v.requiredAlly) continue;
+    const tags = v.tags || [];
+    if (tags.includes('Consumable') || tags.includes('Trinket')) continue;
+    if (v.into && v.into.length) continue;
+    if (seen.has(v.name)) continue;
+    if (tags.includes('Boots')) { if (v.gold.total >= 700) { BOOTS.push(id); seen.add(v.name); } }
+    else if (v.gold.total >= 2200) { LEG.push(id); seen.add(v.name); }
+    ITEM[id] = {name:v.name};
+  }
+}
+
+/* ---------- thèmes ---------- */
+function makeTheme(key, param) {
+  const T = THEMES[key];
+  if (!T) return null;
+  if (key === 'region') {
+    const r = param && REGIONS[param] ? param : pick(Object.keys(REGIONS));
+    return {key, param:r, label:'Mono-région : ' + r, desc:"Toute l'équipe vient de la même région de Runeterra.", test:c => REGIONS[r].includes(c.id)};
+  }
+  if (key === 'letter') {
+    let L = param;
+    if (!L) {
+      const counts = {};
+      CHAMPS.forEach(c => { const l = c.name[0].toUpperCase(); counts[l] = (counts[l] || 0) + 1; });
+      L = pick(Object.keys(counts).filter(l => counts[l] >= 7));
+    }
+    return {key, param:L, label:'Tous en « ' + L + ' »', desc:"Tous les champions commencent par la même lettre.", test:c => c.name[0].toUpperCase() === L};
+  }
+  if (T.pools) return {key, label:T.n, desc:T.d, strict:true, test:(c, role) => (T.pools[role] || []).includes(c.id)};
+  return {key, label:T.n, desc:T.d, test:c => T.test(c)};
+}
+
+/* ---------- état ---------- */
+let state = null;     // {teams:[{theme, duo, picks:[pick]}]}
+const drawn = new Set(store.get('tb-history') || []);
+const animate = new Set();
+
+function opts() {
+  return {
+    theme: $('#theme').value, duo: $('#duo').checked, roles: $('#roles').checked,
+    sums: $('#sums').value, build: $('#build').checked, defis: $('#defis').checked,
+    players: $('#players').value, shufflePlayers: $('#shufflePlayers').checked,
+    twoTeams: $('#twoTeams').checked, noRepeat: $('#noRepeat').checked,
+  };
+}
+function saveOpts() { store.set('tb-opts', opts()); }
+function loadOpts() {
+  const o = store.get('tb-opts'); if (!o) return;
+  for (const [k, v] of Object.entries(o)) { const el = document.getElementById(k); if (!el) continue; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; }
+  if (!$('#theme').value) $('#theme').value = 'none';
+}
+
+function usedIds(except) {
+  const u = new Set();
+  if (state) for (const t of state.teams) for (const p of t.picks) if (p !== except && p.c) u.add(p.c);
+  return u;
+}
+
+function rollChamp(team, p) {
+  const o = opts(), used = usedIds(p), th = team.theme;
+  const free = list => list.filter(c => !used.has(c.id));
+  const fresh = list => o.noRepeat ? list.filter(c => !drawn.has(c.id)) : list;
+  const base = o.roles ? CHAMPS.filter(c => c.roles.includes(p.r)) : CHAMPS;
+  const tries = [];
+  if (th) {
+    if (th.strict) tries.push(CHAMPS.filter(c => th.test(c, p.r)));
+    else { tries.push(base.filter(c => th.test(c, p.r))); tries.push(CHAMPS.filter(c => th.test(c, p.r))); }
+  }
+  tries.push(base, CHAMPS);
+  for (const pass of [true, false]) for (const list of tries) {
+    const l = free(pass ? fresh(list) : list);
+    if (l.length) return pick(l).id;
+  }
+  return pick(CHAMPS).id;
+}
+
+function rollRunes() {
+  const [pt, st] = shuffle(TREES);
+  const pm = [1, 2, 3].map(i => pick(pt.slots[i].runes).id);
+  const slots = shuffle([1, 2, 3]).slice(0, 2).sort();
+  return {p:pt.id, k:pick(pt.slots[0].runes).id, pm, s:st.id, sm:slots.map(i => pick(st.slots[i].runes).id), sh:SHARD_ROWS.map(r => pick(r))};
+}
+
+function rollSums(role) {
+  const mode = opts().sums, S = 'SummonerSmite', F = 'SummonerFlash';
+  let pool = SUMS.map(s => s.id).filter(id => id !== S);
+  if (mode === 'noflash') pool = pool.filter(id => id !== F);
+  const out = [];
+  if (role === 'jungle') out.push(S);
+  if (mode === 'classic' && SUM[F]) { out.push(F); pool = pool.filter(id => id !== F); }
+  for (const id of shuffle(pool)) { if (out.length >= 2) break; out.push(id); }
+  return out.slice(0, 2);
+}
+
+function rollBuild(champId) {
+  if (!opts().build) return [];
+  const noBoots = champId === 'Cassiopeia';
+  return [...(noBoots ? [] : [pick(BOOTS)]), ...shuffle(LEG).slice(0, noBoots ? 6 : 5)].filter(Boolean);
+}
+
+function rollDefi() { return rnd(DEFIS.length); }
+
+function fillPick(team, p, what = 'all') {
+  if (what === 'all' || what === 'champ') { p.c = rollChamp(team, p); animate.add(p); }
+  if (what === 'all' || what === 'runes') p.ru = rollRunes();
+  if (what === 'all' || what === 'sums') p.s = rollSums(p.r);
+  if (what === 'all' || what === 'build' || (what === 'champ' && (p.c === 'Cassiopeia' || p.it?.length === 6 && !BOOTS.includes(p.it[0])))) p.it = rollBuild(p.c);
+  if (what === 'all' || what === 'defi') p.d = opts().defis ? rollDefi() : null;
+  if (p.c) drawn.add(p.c);
+}
+
+function chooseTheme(key) {
+  if (key === 'none') return null;
+  if (key === 'surprise') return makeTheme(pick(Object.keys(THEMES)));
+  return makeTheme(key);
+}
+
+function generate() {
+  const o = opts(), nTeams = o.twoTeams ? 2 : 1;
+  if (!state || state.teams.length !== nTeams) {
+    state = {teams: Array.from({length:nTeams}, () => ({theme:null, duo:null, picks: ROLES.map(r => ({r:r.k, l:false}))}))};
+  }
+  // joueurs
+  let names = o.players.split(/\n|,/).map(s => s.trim()).filter(Boolean);
+  if (o.shufflePlayers) names = shuffle(names);
+  const all = state.teams.flatMap(t => t.picks);
+  const freeSlots = all.filter(p => !p.l);
+  const lockedNames = new Set(all.filter(p => p.l && p.p).map(p => p.p));
+  names = names.filter(n => !lockedNames.has(n));
+  freeSlots.forEach((p, i) => p.p = names[i] || '');
+
+  for (const team of state.teams) {
+    team.theme = chooseTheme(o.theme);
+    team.duo = null;
+    for (const p of team.picks) if (!p.l) p.c = null; // libère les champions avant le tirage
+  }
+  for (const team of state.teams) {
+    const adc = team.picks[3], sup = team.picks[4];
+    if (o.duo && !adc.l && !sup.l) {
+      const used = usedIds();
+      const ok = DUOS.map((d, i) => i).filter(i => CH[DUOS[i][0]] && CH[DUOS[i][1]] && !used.has(DUOS[i][0]) && !used.has(DUOS[i][1]) && !(o.noRepeat && (drawn.has(DUOS[i][0]) || drawn.has(DUOS[i][1]))));
+      const pool = ok.length ? ok : DUOS.map((d, i) => i).filter(i => CH[DUOS[i][0]] && CH[DUOS[i][1]] && !used.has(DUOS[i][0]) && !used.has(DUOS[i][1]));
+      if (pool.length) team.duo = pick(pool);
+    }
+    if (team.duo != null) { adc.c = DUOS[team.duo][0]; sup.c = DUOS[team.duo][1]; }
+    for (const p of team.picks) {
+      if (p.l) continue;
+      if (team.duo != null && (p === adc || p === sup)) {
+        animate.add(p);
+        for (const w of ['runes', 'sums', 'build', 'defi']) fillPick(team, p, w);
+      } else fillPick(team, p);
+    }
+  }
+  store.set('tb-history', [...drawn]);
+  history_ui();
+  render();
+}
+
+function reroll(ti, pi, what) {
+  const team = state.teams[ti], p = team.picks[pi];
+  fillPick(team, p, what);
+  store.set('tb-history', [...drawn]);
+  history_ui();
+  render();
+}
+
+/* ---------- rendu ---------- */
+const img = {
+  champLoad: id => `${DD}/cdn/img/champion/loading/${id}_0.jpg`,
+  champIcon: id => `${DD}/cdn/${V}/img/champion/${id}.png`,
+  perk: id => `${DD}/cdn/img/${PERK[id]?.icon}`,
+  sum: id => `${DD}/cdn/${V}/img/spell/${id}.png`,
+  item: id => `${DD}/cdn/${V}/img/item/${id}.png`,
+  role: k => CD_POS + ROLES.find(r => r.k === k).icon + '.png',
+};
+
+function duoOf(team) {
+  if (team.duo == null) return null;
+  const d = DUOS[team.duo];
+  return team.picks[3].c === d[0] && team.picks[4].c === d[1] ? d : null;
+}
+
+function cardHTML(team, p, ti, pi) {
+  const c = CH[p.c], role = ROLES.find(r => r.k === p.r), ru = p.ru;
+  const perkImg = (id, cls, extra = '') => `<img class="ico ${cls}" src="${img.perk(id)}" alt="${esc(PERK[id]?.name || '')}" title="${esc(PERK[id]?.name || '')}" loading="lazy" ${extra}>`;
+  const offRole = !c.roles.includes(p.r) ? ' · hors-poste' : '';
+  return `<article class="card${p.l ? ' locked' : ''}" data-t="${ti}" data-p="${pi}">
+    <div class="art">
+      <img class="splash" src="${img.champLoad(c.id)}" alt="">
+      <div class="role"><img src="${img.role(p.r)}" alt="">${role.n}</div>
+      ${p.p ? `<div class="player" title="${esc(p.p)}">${esc(p.p)}</div>` : ''}
+      <div class="cname"><b>${esc(c.name)}</b><i>${esc(c.title)}${offRole}</i></div>
+      <button class="btn small reroll-champ" data-a="champ" title="Relancer seulement le champion">↻</button>
+      ${animate.has(p) ? `<div class="spin"><img alt=""></div>` : ''}
+    </div>
+    <div class="body">
+      <div class="sec">
+        <div class="lbl">Sorts <button class="mini" data-a="sums" title="Relancer les sorts">↻</button></div>
+        ${p.s.map(id => `<img class="ico" src="${img.sum(id)}" alt="${esc(SUM[id]?.name)}" title="${esc(SUM[id]?.name)}">`).join('')}
+      </div>
+      <div class="sec">
+        <div class="lbl">Runes <button class="mini" data-a="runes" title="Relancer les runes">↻</button></div>
+        <div class="runes">
+          ${perkImg(ru.k, 'ks')}
+          <div class="col">
+            <div class="ksname">${esc(PERK[ru.k].name)}</div>
+            <div class="row">${perkImg(ru.p, 'tree')}${ru.pm.map(id => perkImg(id, 'sm')).join('')}</div>
+            <div class="row">${perkImg(ru.s, 'tree')}${ru.sm.map(id => perkImg(id, 'sm')).join('')}
+              <span style="width:4px"></span>${ru.sh.map(id => perkImg('s' + id, 'shard')).join('')}</div>
+          </div>
+        </div>
+      </div>
+      ${p.it && p.it.length ? `<div class="sec">
+        <div class="lbl">Build <button class="mini" data-a="build" title="Relancer le build">↻</button></div>
+        <div class="items">${p.it.map(id => `<img src="${img.item(id)}" alt="${esc(ITEM[id]?.name)}" title="${esc(ITEM[id]?.name)}" loading="lazy">`).join('')}</div>
+      </div>` : ''}
+      ${p.d != null ? `<div class="defi" data-a="defi" title="Cliquer pour changer de défi"><b>Défi :</b> ${esc(DEFIS[p.d])}</div>` : ''}
+      <div class="foot">
+        <button class="btn small lock${p.l ? ' on' : ''}" data-a="lock" title="Verrouiller : ce rôle ne bouge plus quand tu régénères">${p.l ? '🔒 Verrouillé' : '🔓 Verrouiller'}</button>
+        <button class="btn small" data-a="all" title="Relancer tout ce rôle">🎲 Relancer</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+function render() {
+  if (!state) return;
+  const two = state.teams.length === 2;
+  $('#out').innerHTML = state.teams.map((team, ti) => {
+    const d = duoOf(team);
+    const name = two ? (ti === 0 ? 'Équipe bleue' : 'Équipe rouge') : 'Ton équipe';
+    return `<section class="team ${two ? (ti === 0 ? 'blue' : 'red') : ''}">
+      <div class="teamhead">
+        <h2>${name}</h2>
+        <span class="tag">${team.theme ? '🎭 ' + esc(team.theme.label) : '🎲 Pur hasard'}</span>
+        ${d ? `<span class="tag duo">🤝 Duo bot : ${esc(d[2])}</span>` : ''}
+        ${team.theme ? `<span class="desc">${esc(team.theme.desc)}</span>` : ''}
+      </div>
+      <div class="grid">${team.picks.map((p, pi) => cardHTML(team, p, ti, pi)).join('')}</div>
+    </section>`;
+  }).join('');
+  runSpins();
+}
+
+function runSpins() {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.spin').forEach((el, i) => {
+    const im = el.querySelector('img');
+    if (reduce) { el.remove(); return; }
+    const frames = 7 + i * 2;
+    let n = 0;
+    const tick = () => {
+      if (n++ >= frames) { el.classList.add('done'); setTimeout(() => el.remove(), 300); return; }
+      im.src = img.champIcon(pick(CHAMPS).id);
+      setTimeout(tick, 55 + n * 6);
+    };
+    tick();
+  });
+  animate.clear();
+}
+
+$('#out').addEventListener('click', e => {
+  const b = e.target.closest('[data-a]'); if (!b) return;
+  const card = b.closest('.card'); const ti = +card.dataset.t, pi = +card.dataset.p;
+  const a = b.dataset.a, p = state.teams[ti].picks[pi];
+  if (a === 'lock') { p.l = !p.l; render(); return; }
+  if (a === 'defi') { p.d = rollDefi(); render(); return; }
+  reroll(ti, pi, a);
+});
+
+/* ---------- export ---------- */
+function asText() {
+  if (!state) return '';
+  return state.teams.map((team, ti) => {
+    const d = duoOf(team);
+    const head = (state.teams.length === 2 ? (ti === 0 ? '🔵 Équipe bleue' : '🔴 Équipe rouge') : '🎲 Team Bravery')
+      + (team.theme ? ` — ${team.theme.label}` : '') + (d ? ` — Duo : ${d[2]}` : '');
+    const lines = team.picks.map(p => {
+      const role = ROLES.find(r => r.k === p.r).n;
+      const ru = p.ru;
+      let l = `**${role}**${p.p ? ' (' + p.p + ')' : ''} : **${CH[p.c].name}** · ${p.s.map(id => SUM[id].name).join(' + ')} · ${PERK[ru.k].name} (${PERK[ru.p].name} / ${PERK[ru.s].name})`;
+      if (p.it?.length) l += `\n   Build : ${p.it.map(id => ITEM[id]?.name).join(', ')}`;
+      if (p.d != null) l += `\n   Défi : ${DEFIS[p.d]}`;
+      return l;
+    });
+    return [head, ...lines].join('\n');
+  }).join('\n\n');
+}
+
+function encodeState() {
+  const s = {v:1, teams: state.teams.map(t => ({th: t.theme ? [t.theme.key, t.theme.param || null] : null, du: t.duo,
+    pk: t.picks.map(p => [p.r, p.c, p.p || '', p.s, [p.ru.p, p.ru.k, ...p.ru.pm, p.ru.s, ...p.ru.sm, ...p.ru.sh], p.it || [], p.d])}))};
+  const bytes = new TextEncoder().encode(JSON.stringify(s));
+  let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function decodeState(str) {
+  try {
+    const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+    const s = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
+    return {teams: s.teams.map(t => ({theme: t.th ? makeTheme(t.th[0], t.th[1]) : null, duo: t.du,
+      picks: t.pk.map(([r, c, pl, su, ru, it, d]) => {
+        if (!CH[c]) throw new Error('champion inconnu');
+        return {r, c, p:pl, s:su, ru:{p:ru[0], k:ru[1], pm:ru.slice(2, 5), s:ru[5], sm:ru.slice(6, 8), sh:ru.slice(8, 11)}, it, d, l:false};
+      })}))};
+  } catch (e) { console.warn('Lien invalide', e); return null; }
+}
+
+async function copy(text, msg) {
+  try { await navigator.clipboard.writeText(text); toast(msg); }
+  catch { prompt('Copie ce texte :', text); }
+}
+
+$('#copyTxt').onclick = () => state ? copy(asText(), 'Résultat copié — colle-le sur Discord !') : toast("Génère d'abord une équipe");
+$('#share').onclick = () => {
+  if (!state) return toast("Génère d'abord une équipe");
+  const url = location.href.split('#')[0] + '#s=' + encodeState();
+  history_replace(url);
+  copy(url, 'Lien copié : tes potes verront exactement ce tirage');
+};
+function history_replace(url) { try { window.history.replaceState(null, '', url); } catch {} }
+
+function history_ui() {
+  const n = drawn.size;
+  $('#hist').innerHTML = n ? `${n} champion${n > 1 ? 's' : ''} déjà tiré${n > 1 ? 's' : ''} cette session · <button id="histReset">réinitialiser</button>` : '';
+  const b = $('#histReset'); if (b) b.onclick = () => { drawn.clear(); store.set('tb-history', []); history_ui(); toast('Historique vidé'); };
+}
+
+/* ---------- init ---------- */
+function initUI() {
+  const sel = $('#theme');
+  sel.innerHTML = `<option value="none">Aucun — pur hasard</option><option value="surprise">🎁 Thème surprise</option>`
+    + Object.entries(THEMES).map(([k, t]) => `<option value="${k}">${t.n}</option>`).join('');
+  loadOpts();
+  document.querySelectorAll('.opt select, .opt input, .opt textarea').forEach(el => el.addEventListener('change', saveOpts));
+  $('#go').onclick = generate;
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)) { e.preventDefault(); generate(); }
+  });
+  history_ui();
+}
+
+(async () => {
+  initUI();
+  try {
+    await loadData();
+  } catch (e) {
+    $('#status').textContent = 'Impossible de charger les données de Riot (Data Dragon). Vérifie ta connexion et recharge la page.';
+    $('#patch').textContent = 'Erreur de chargement';
+    return;
+  }
+  $('#patch').textContent = `Champions, runes, sorts et build au hasard · patch ${V} · ${CHAMPS.length} champions · Espace pour relancer`;
+  $('#go').disabled = false;
+  const m = location.hash.match(/^#s=([\w-]+)/);
+  const shared = m && decodeState(m[1]);
+  if (shared) { state = shared; render(); toast('Tirage partagé chargé'); }
+  else generate();
+})();
+</script>
+</body>
+</html>
