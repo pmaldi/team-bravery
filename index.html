@@ -334,11 +334,11 @@ async function loadData() {
     if (id.length > 4 || !v.maps?.['11'] || !v.gold?.purchasable || v.inStore === false || v.requiredChampion || v.requiredAlly) continue;
     const tags = v.tags || [];
     if (tags.includes('Consumable') || tags.includes('Trinket')) continue;
-    if (v.into && v.into.length) continue;
     if (seen.has(v.name)) continue;
-    if (tags.includes('Boots')) { if (v.gold.total >= 700) { BOOTS.push(id); seen.add(v.name); } }
-    else if (v.gold.total >= 2200) { LEG.push(id); seen.add(v.name); }
-    ITEM[id] = {name:v.name};
+    // bottes classiques (niveau 2) : pas les versions améliorées, difficiles à reconnaître
+    if (tags.includes('Boots')) { if (v.depth === 2) { BOOTS.push(id); seen.add(v.name); ITEM[id] = {name:v.name}; } continue; }
+    if (v.into && v.into.length) continue;
+    if (v.gold.total >= 2200) { LEG.push(id); seen.add(v.name); ITEM[id] = {name:v.name}; }
   }
 }
 
