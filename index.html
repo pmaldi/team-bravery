@@ -133,7 +133,13 @@ footer a{color:var(--muted)}
       <div class="opt">
         <label class="t" for="theme">Thème de l'équipe</label>
         <select id="theme"></select>
-        <label class="check"><input type="checkbox" id="duo"> <span>Synergie bot lane<small>ADC + support tirés parmi des duos qui marchent ensemble</small></span></label>
+        <label class="t" for="duoMode" style="margin-top:10px">Synergie bot lane</label>
+        <select id="duoMode">
+          <option value="off">Désactivée</option>
+          <option value="classic">Duos classiques (Xayah + Rakan…)</option>
+          <option value="fun">Duos fous (Alistar + Blitzcrank…)</option>
+          <option value="all">Classiques et fous</option>
+        </select>
         <label class="check"><input type="checkbox" id="roles" checked> <span>Respecter les rôles<small>Décoché : n'importe quel champion à n'importe quel poste</small></span></label>
       </div>
       <div class="opt">
@@ -143,6 +149,7 @@ footer a{color:var(--muted)}
           <option value="random">Totalement aléatoire</option>
           <option value="noflash">Sans Saut éclair 😈</option>
         </select>
+        <label class="check"><input type="checkbox" id="champsOnly"> <span>Champions seulement<small>Juste les persos : pas de runes, de sorts ni de build</small></span></label>
         <label class="check"><input type="checkbox" id="build" checked> <span>Build aléatoire<small>Bottes + 5 objets légendaires</small></span></label>
         <label class="check"><input type="checkbox" id="defis"> <span>Défis fun<small>Une contrainte par joueur (clique dessus pour en changer)</small></span></label>
       </div>
@@ -246,6 +253,13 @@ const DUOS = [
   ['Zeri','Yuumi','Batterie chargée'], ['Nilah','Taric','Duo indestructible'], ['Tristana','Leona','Saut dans le tas'],
   ['Seraphine','Sona','Le concert'], ['Yunara','Karma','Ionia unie'], ['Samira','Rell','Style maximum'],
   ['Varus','Bard','Destin croisé'], ['Smolder','Milio','Le petit dragon'], ['Senna','TahmKench','Avalé, protégé'],
+  // duos fous : n'importe quels champions en bot lane
+  ['Alistar','Blitzcrank','Double engage',1], ['Yasuo','Malphite','Tornade et éboulement',1], ['Garen','Lux','Frère et sœur',1],
+  ['Ziggs','Heimerdinger','Les ingénieurs yordles',1], ['Veigar','Lux','Double cage',1], ['Teemo','Shaco','Pièges partout',1],
+  ['Kayle','Morgana','Les sœurs ailées',1], ['Jinx','Vi','Les sœurs de Zaun',1], ['Brand','Zyra','Feu et ronces',1],
+  ['Nasus','Soraka','Stack infini',1], ['Sion','Taric','Le mur qui ne meurt pas',1], ['Karthus','Yuumi','Requiem câlin',1],
+  ['Yone','Yasuo','Les frères',1], ['Draven','Darius','Les frères noxiens',1], ['Leona','Diana','Soleil et lune',1],
+  ['Tryndamere','Ashe','Le couple du Freljord',1], ['Lucian','Senna','Les amoureux éternels',1], ['Senna','Pyke','Les âmes perdues',1],
 ];
 
 const DEFIS = [
@@ -370,7 +384,7 @@ const animate = new Set();
 
 function opts() {
   return {
-    theme: $('#theme').value, duo: $('#duo').checked, roles: $('#roles').checked,
+    theme: $('#theme').value, duo: $('#duoMode').value, champsOnly: $('#champsOnly').checked, roles: $('#roles').checked,
     sums: $('#sums').value, build: $('#build').checked, defis: $('#defis').checked,
     players: $('#players').value, shufflePlayers: $('#shufflePlayers').checked,
     twoTeams: $('#twoTeams').checked, noRepeat: $('#noRepeat').checked,
@@ -381,6 +395,7 @@ function loadOpts() {
   const o = store.get('tb-opts'); if (!o) return;
   for (const [k, v] of Object.entries(o)) { const el = document.getElementById(k); if (!el) continue; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; }
   if (!$('#theme').value) $('#theme').value = 'none';
+  $('#duoMode').value = o.duo === true ? 'classic' : ['off', 'classic', 'fun', 'all'].includes(o.duo) ? o.duo : 'off';
 }
 
 function usedIds(except) {
@@ -469,10 +484,11 @@ function generate() {
   }
   for (const team of state.teams) {
     const adc = team.picks[3], sup = team.picks[4];
-    if (o.duo && !adc.l && !sup.l) {
+    if (o.duo && o.duo !== 'off' && !adc.l && !sup.l) {
       const used = usedIds();
-      const ok = DUOS.map((d, i) => i).filter(i => CH[DUOS[i][0]] && CH[DUOS[i][1]] && !used.has(DUOS[i][0]) && !used.has(DUOS[i][1]) && !(o.noRepeat && (drawn.has(DUOS[i][0]) || drawn.has(DUOS[i][1]))));
-      const pool = ok.length ? ok : DUOS.map((d, i) => i).filter(i => CH[DUOS[i][0]] && CH[DUOS[i][1]] && !used.has(DUOS[i][0]) && !used.has(DUOS[i][1]));
+      const modeOk = i => o.duo === 'all' || (o.duo === 'fun') === !!DUOS[i][3];
+      const ok = DUOS.map((d, i) => i).filter(modeOk).filter(i => CH[DUOS[i][0]] && CH[DUOS[i][1]] && !used.has(DUOS[i][0]) && !used.has(DUOS[i][1]) && !(o.noRepeat && (drawn.has(DUOS[i][0]) || drawn.has(DUOS[i][1]))));
+      const pool = ok.length ? ok : DUOS.map((d, i) => i).filter(modeOk).filter(i => CH[DUOS[i][0]] && CH[DUOS[i][1]] && !used.has(DUOS[i][0]) && !used.has(DUOS[i][1]));
       if (pool.length) team.duo = pick(pool);
     }
     if (team.duo != null) { adc.c = DUOS[team.duo][0]; sup.c = DUOS[team.duo][1]; }
@@ -527,7 +543,7 @@ function cardHTML(team, p, ti, pi) {
       ${animate.has(p) ? `<div class="spin"><img alt=""></div>` : ''}
     </div>
     <div class="body">
-      <div class="sec">
+      ${opts().champsOnly ? '' : `<div class="sec">
         <div class="lbl">Sorts <button class="mini" data-a="sums" title="Relancer les sorts">↻</button></div>
         ${p.s.map(id => `<img class="ico" src="${img.sum(id)}" alt="${esc(SUM[id]?.name)}" title="${esc(SUM[id]?.name)}">`).join('')}
       </div>
@@ -546,7 +562,7 @@ function cardHTML(team, p, ti, pi) {
       ${p.it && p.it.length ? `<div class="sec">
         <div class="lbl">Build <button class="mini" data-a="build" title="Relancer le build">↻</button></div>
         <div class="items">${p.it.map(id => `<img src="${img.item(id)}" alt="${esc(ITEM[id]?.name)}" title="${esc(ITEM[id]?.name)}" loading="lazy">`).join('')}</div>
-      </div>` : ''}
+      </div>` : ''}`}
       ${p.d != null ? `<div class="defi" data-a="defi" title="Cliquer pour changer de défi"><b>Défi :</b> ${esc(DEFIS[p.d])}</div>` : ''}
       <div class="foot">
         <button class="btn small lock${p.l ? ' on' : ''}" data-a="lock" title="Verrouiller : ce rôle ne bouge plus quand tu régénères">${p.l ? '🔒 Verrouillé' : '🔓 Verrouiller'}</button>
@@ -611,8 +627,9 @@ function asText() {
     const lines = team.picks.map(p => {
       const role = ROLES.find(r => r.k === p.r).n;
       const ru = p.ru;
-      let l = `**${role}**${p.p ? ' (' + p.p + ')' : ''} : **${CH[p.c].name}** · ${p.s.map(id => SUM[id].name).join(' + ')} · ${PERK[ru.k].name} (${PERK[ru.p].name} / ${PERK[ru.s].name})`;
-      if (p.it?.length) l += `\n   Build : ${p.it.map(id => ITEM[id]?.name).join(', ')}`;
+      let l = `**${role}**${p.p ? ' (' + p.p + ')' : ''} : **${CH[p.c].name}**`;
+      if (!opts().champsOnly) l += ` · ${p.s.map(id => SUM[id].name).join(' + ')} · ${PERK[ru.k].name} (${PERK[ru.p].name} / ${PERK[ru.s].name})`;
+      if (p.it?.length && !opts().champsOnly) l += `\n   Build : ${p.it.map(id => ITEM[id]?.name).join(', ')}`;
       if (p.d != null) l += `\n   Défi : ${DEFIS[p.d]}`;
       return l;
     });
@@ -666,6 +683,7 @@ function initUI() {
     + Object.entries(THEMES).map(([k, t]) => `<option value="${k}">${t.n}</option>`).join('');
   loadOpts();
   document.querySelectorAll('.opt select, .opt input, .opt textarea').forEach(el => el.addEventListener('change', saveOpts));
+  $('#champsOnly').addEventListener('change', render);
   $('#go').onclick = generate;
   document.addEventListener('keydown', e => {
     if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)) { e.preventDefault(); generate(); }
