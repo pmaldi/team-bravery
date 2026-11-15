@@ -128,7 +128,7 @@ details.opts[open] summary::before{transform:rotate(90deg)}
 .card.charging .spin img{animation:pulse .35s ease-in-out infinite alternate;border-color:#f0e6d2}
 .card.revealed{transform:scale(1.05)}
 .card.proc-pending .body>*:not(.foot){visibility:hidden}
-.dimmed .card:not(.lucky){filter:saturate(.3) brightness(.6)}
+.dimmed .card:not(.lucky):not(.perfect){filter:saturate(.3) brightness(.6)}
 .flash{position:fixed;inset:0;background:radial-gradient(circle at var(--x) var(--y),#fff8e0 0,rgba(240,230,210,.6) 120px,transparent 520px);z-index:40;pointer-events:none;animation:flash .7s ease-out forwards}
 .shine{position:absolute;inset:0;z-index:5;pointer-events:none;background:linear-gradient(105deg,transparent 35%,rgba(255,248,224,.75) 50%,transparent 65%);transform:translateX(-120%);animation:shine .9s .1s ease-out forwards}
 .banner{position:absolute;left:50%;top:-14px;z-index:6;transform:translate(-50%,-20px) scale(.6);opacity:0;white-space:nowrap;pointer-events:none;font-family:Cinzel,serif;font-weight:800;font-size:13px;letter-spacing:.12em;color:#1a1206;padding:4px 14px;border-radius:4px;background:linear-gradient(180deg,#f7ecc9,#c8aa6e 60%,#8a6a30);box-shadow:0 4px 18px rgba(200,170,110,.6);transition:.45s cubic-bezier(.2,1.6,.4,1)}
@@ -194,7 +194,15 @@ footer a{color:var(--muted)}
       <div class="opt">
         <label class="t">Partie</label>
         <label class="check"><input type="checkbox" id="twoTeams"> <span>Deux équipes (5v5 en partie perso)<small>10 joueurs, aucun champion en double</small></span></label>
-        <label class="check"><input type="checkbox" id="forceProc"> <span>Forcer le Pick parfait ✦<small>Sinon 10 % de chance à chaque tirage : un joueur tombe sur un champion à son poste avec les runes, sorts et build les plus joués (stats op.gg)</small></span></label>
+        <label class="t" for="procCount" style="margin-top:10px">Pick parfait ✦</label>
+        <select id="procCount">
+          <option value="1">1 joueur maximum</option>
+          <option value="2">2 joueurs maximum</option>
+          <option value="3">3 joueurs maximum</option>
+          <option value="4">4 joueurs maximum</option>
+          <option value="5">5 joueurs maximum</option>
+        </select>
+        <label class="check"><input type="checkbox" id="forceProc"> <span>Forcer le Pick parfait<small>Coché : exactement ce nombre de joueurs. Sinon, chacun a 20 % de chance. Un pick parfait, c'est un champion à son poste avec les runes, sorts et build les plus joués (stats op.gg)</small></span></label>
         <label class="check"><input type="checkbox" id="noRepeat"> <span>Pas de répétition<small>Évite les champions déjà tirés pendant la session</small></span></label>
         <div class="hist" id="hist"></div>
       </div>
@@ -424,7 +432,7 @@ function opts() {
     theme: $('#theme').value, duo: $('#duoMode').value, champsOnly: $('#champsOnly').checked, roles: $('#roles').checked,
     sums: $('#sums').value, build: $('#build').checked, defis: $('#defis').checked,
     players: $('#players').value, shufflePlayers: $('#shufflePlayers').checked,
-    twoTeams: $('#twoTeams').checked, noRepeat: $('#noRepeat').checked, forceProc: $('#forceProc').checked,
+    twoTeams: $('#twoTeams').checked, noRepeat: $('#noRepeat').checked, forceProc: $('#forceProc').checked, procCount: +$('#procCount').value || 1,
   };
 }
 function saveOpts() { store.set('tb-opts', opts()); }
@@ -486,8 +494,8 @@ function rollBuild(champId) {
 
 function rollDefi() { return rnd(DEFIS.length); }
 
-/* ---------- Pick parfait : 10 % de chance par tirage ---------- */
-const PROC_CHANCE = 0.10;
+/* ---------- Pick parfait : 20 % de chance par joueur (jusqu au nombre choisi) ---------- */
+const PROC_CHANCE = 0.20;
 const OPGG_ROLE = {top:'TOP', jungle:'JUNGLE', mid:'MID', adc:'ADC', support:'SUPPORT'};
 // pages de secours si op.gg ne répond pas : [arbre, clé de voûte, mineures, arbre secondaire, mineures, fragments]
 const ARCH = {
@@ -611,9 +619,11 @@ function generate() {
       } else fillPick(team, p);
     }
   }
-  if (o.forceProc || Math.random() < PROC_CHANCE) {
-    const cands = state.teams.flatMap(t => t.picks.filter(p => !p.l && !(duoOf(t) && (p === t.picks[3] || p === t.picks[4]))).map(p => [t, p]));
-    if (cands.length) { const [t, p] = pick(cands); makePerfect(t, p); }
+  // Pick parfait : exactement N si forcé, sinon chacune des N places a 20 % de chance
+  const nProc = o.forceProc ? o.procCount : Array.from({length:o.procCount}, () => Math.random() < PROC_CHANCE).filter(Boolean).length;
+  if (nProc) {
+    const cands = shuffle(state.teams.flatMap(t => t.picks.filter(p => !p.l && !(duoOf(t) && (p === t.picks[3] || p === t.picks[4]))).map(p => [t, p])));
+    for (const [t, p] of cands.slice(0, nProc)) makePerfect(t, p);
   }
   store.set('tb-history', [...drawn]);
   history_ui();
@@ -712,12 +722,15 @@ function render() {
   runSpins();
 }
 
+let procRun = 0;
 function runSpins() {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const run = ++procRun, total = document.querySelectorAll('.card.proc-pending').length;
+  let order = 0;
   document.querySelectorAll('.spin').forEach((el, i) => {
     const im = el.querySelector('img');
     const card = el.closest('.card');
-    if (card.classList.contains('proc-pending')) { procSequence(card, el, reduce); return; }
+    if (card.classList.contains('proc-pending')) { procSequence(card, el, reduce, run, order++, total); return; }
     if (reduce) { el.remove(); return; }
     const frames = 7 + i * 2;
     let n = 0;
@@ -740,9 +753,9 @@ function burst(x, y) {
     document.body.appendChild(d); setTimeout(() => d.remove(), 1300);
   }
 }
-let procRun = 0;
-async function procSequence(card, sp, reduce) {
-  const run = ++procRun, ti = +card.dataset.t, pi = +card.dataset.p;
+// plusieurs picks parfaits : toutes les cartes chargent ensemble, puis se révèlent l'une après l'autre
+async function procSequence(card, sp, reduce, run, order, total) {
+  const ti = +card.dataset.t, pi = +card.dataset.p;
   const team = state.teams[ti], p = team.picks[pi], ready = p.ready || Promise.resolve(false);
   const alive = () => run === procRun && card.isConnected;
   const swap = () => { // remplace la carte par sa version finale (stats op.gg à jour)
@@ -753,27 +766,28 @@ async function procSequence(card, sp, reduce) {
   let spinning = true;
   (function tick() { if (!spinning || !card.isConnected) return; sp.querySelector('img').src = img.champIcon(pick(CHAMPS).id); setTimeout(tick, 45); })();
   await sleep(900); if (!alive()) return;
-  card.scrollIntoView?.({block:'nearest', behavior:'smooth'});
+  if (order === 0) card.scrollIntoView?.({block:'nearest', behavior:'smooth'});
   const veil = $('#veil');
-  const center = () => { const r = card.getBoundingClientRect(); return [r.left + r.width / 2, r.top + 115]; };
-  let [x, y] = center();
-  veil.style.setProperty('--x', x + 'px'); veil.style.setProperty('--y', y + 'px');
+  const center = el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + 115]; };
+  let [x, y] = center(card);
+  if (order === 0) { veil.style.setProperty('--x', x + 'px'); veil.style.setProperty('--y', y + 'px'); }
   card.classList.add('lucky'); veil.classList.add('on'); $('#out').classList.add('dimmed');
   await sleep(500); if (!alive()) return;
   card.classList.add('charging');
-  await Promise.all([sleep(900), Promise.race([ready, sleep(3000)])]);
+  await Promise.all([sleep(900 + order * 1100), Promise.race([ready, sleep(3000 + order * 1100)])]);
   spinning = false; if (!alive()) return;
   // révélation
   const el = swap();
   el.classList.remove('perfect'); el.classList.add('lucky', 'revealed');
-  [x, y] = (() => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + 115]; })();
+  [x, y] = center(el);
+  if (total > 1) { el.scrollIntoView?.({block:'nearest', behavior:'smooth'}); veil.style.setProperty('--x', x + 'px'); veil.style.setProperty('--y', y + 'px'); }
   const f = document.createElement('div'); f.className = 'flash'; f.style.setProperty('--x', x + 'px'); f.style.setProperty('--y', y + 'px');
   document.body.appendChild(f); setTimeout(() => f.remove(), 800);
   burst(x, y);
   const sh = document.createElement('div'); sh.className = 'shine'; el.querySelector('.art').appendChild(sh);
   toast(`✦ PICK PARFAIT${p.p ? ' pour ' + p.p : ''} : ${CH[p.c].name} ✦`);
   await sleep(1400); if (run !== procRun || !el.isConnected) return;
-  veil.classList.remove('on'); $('#out').classList.remove('dimmed');
+  if (order === total - 1) { veil.classList.remove('on'); $('#out').classList.remove('dimmed'); }
   el.classList.remove('lucky', 'revealed'); el.classList.add('perfect');
   // op.gg a répondu après la révélation : on met la carte à jour
   if (p.src !== 'opgg') ready.then(ok => { if (ok && run === procRun && el.isConnected && p.perfect) {

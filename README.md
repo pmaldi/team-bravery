@@ -12,7 +12,7 @@ A single static page (`index.html`), with no dependencies. Data and icons come l
 - Bot lane synergy (curated ADC + support duos)
 - Fun challenges per player, player names (with shuffling), 5v5 mode with two teams, no repeats across rolls
 - Copy as text for Discord and a share link that reproduces the exact roll
-- Perfect Pick: on each roll, a 10% chance (or forced with an option) that one player lands a champion in their real role, with the most played runes, spells and build pulled from op.gg stats. It comes with a dedicated animation. op.gg's API is unofficial: if it doesn't respond, local rune pages by champion type take over.
+- Perfect Pick: you choose up to how many players (1 to 5) can get it; each one has a 20% chance per roll, or it can be forced. A player who gets it lands a champion in their real role, with the most played runes, spells and build pulled from op.gg stats. It comes with a dedicated animation. op.gg's API is unofficial: if it doesn't respond, local rune pages by champion type take over.
 - Space bar = generate again
 
 ## Publish on GitHub Pages
