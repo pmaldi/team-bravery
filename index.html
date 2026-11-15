@@ -66,9 +66,9 @@ details.opts[open] summary::before{transform:rotate(90deg)}
 @media (max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:460px){.grid{grid-template-columns:minmax(0,1fr)}}
 
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;position:relative;transition:border-color .2s}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;position:relative;transition:border-color .2s,transform .5s cubic-bezier(.2,1.4,.4,1),filter .4s}
 .card.locked{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-dim) inset}
-.art{position:relative;height:230px;overflow:hidden;background:#000}
+.art{position:relative;height:230px;overflow:hidden;background:#000;border-radius:var(--r) var(--r) 0 0}
 .art img.splash{width:100%;height:100%;object-fit:cover;object-position:center 18%;transition:transform .4s}
 .card:hover .art img.splash{transform:scale(1.03)}
 .art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,11,22,.55) 0%,transparent 28%,transparent 55%,var(--panel) 100%);pointer-events:none}
@@ -83,7 +83,7 @@ details.opts[open] summary::before{transform:rotate(90deg)}
 .spin.done{opacity:0;pointer-events:none}
 .reroll-champ{position:absolute;bottom:8px;right:8px;z-index:4}
 
-.body{padding:8px 10px 10px;display:flex;flex-direction:column;gap:9px;flex:1}
+.body{padding:8px 10px 10px;display:flex;flex-direction:column;gap:9px;flex:1;background:var(--panel);border-radius:0 0 var(--r) var(--r)}
 .sec{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .sec .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);width:100%;display:flex;justify-content:space-between;align-items:center}
 .ico{width:30px;height:30px;border-radius:5px;border:1px solid var(--line2);background:#000}
@@ -108,6 +108,39 @@ details.opts[open] summary::before{transform:rotate(90deg)}
 .status{text-align:center;padding:60px 16px;color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(30px);background:var(--panel2);border:1px solid var(--gold);color:var(--gold2);padding:10px 16px;border-radius:8px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ===== Pick parfait (proc) ===== */
+@property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes turn{to{--a:360deg}}
+@keyframes pulse{from{box-shadow:0 0 10px #c8aa6e}to{box-shadow:0 0 40px #f0e6d2,0 0 80px #0ac8b9}}
+@keyframes shake{0%,100%{translate:0 0}25%{translate:1px -1px}50%{translate:-1px 1px}75%{translate:1px 1px}}
+@keyframes flash{from{opacity:1}to{opacity:0}}
+@keyframes shine{to{transform:translateX(120%)}}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+@keyframes pin{to{opacity:1;transform:none}}
+.veil{position:fixed;inset:0;background:radial-gradient(circle at var(--x,50%) var(--y,50%),transparent 0,rgba(3,6,12,.82) 320px);opacity:0;pointer-events:none;transition:opacity .45s;z-index:20}
+.veil.on{opacity:1}
+.card.perfect,.card.lucky{z-index:1;border-color:transparent}
+.card.lucky{z-index:30}
+.card.perfect::before,.card.lucky::before{content:"";position:absolute;inset:-3px;border-radius:13px;z-index:-1;background:conic-gradient(from var(--a),#785a28,#f0e6d2,#c8aa6e,#0ac8b9,#785a28);animation:turn 4s linear infinite}
+.card.lucky::before{animation-duration:1.1s}
+.card.perfect{transform:scale(1.02);box-shadow:0 0 30px rgba(200,170,110,.45),0 0 80px rgba(10,200,185,.15)}
+.card.charging{animation:shake .12s linear infinite}
+.card.charging .spin img{animation:pulse .35s ease-in-out infinite alternate;border-color:#f0e6d2}
+.card.revealed{transform:scale(1.05)}
+.card.proc-pending .body>*:not(.foot){visibility:hidden}
+.dimmed .card:not(.lucky){filter:saturate(.3) brightness(.6)}
+.flash{position:fixed;inset:0;background:radial-gradient(circle at var(--x) var(--y),#fff8e0 0,rgba(240,230,210,.6) 120px,transparent 520px);z-index:40;pointer-events:none;animation:flash .7s ease-out forwards}
+.shine{position:absolute;inset:0;z-index:5;pointer-events:none;background:linear-gradient(105deg,transparent 35%,rgba(255,248,224,.75) 50%,transparent 65%);transform:translateX(-120%);animation:shine .9s .1s ease-out forwards}
+.banner{position:absolute;left:50%;top:-14px;z-index:6;transform:translate(-50%,-20px) scale(.6);opacity:0;white-space:nowrap;pointer-events:none;font-family:Cinzel,serif;font-weight:800;font-size:13px;letter-spacing:.12em;color:#1a1206;padding:4px 14px;border-radius:4px;background:linear-gradient(180deg,#f7ecc9,#c8aa6e 60%,#8a6a30);box-shadow:0 4px 18px rgba(200,170,110,.6);transition:.45s cubic-bezier(.2,1.6,.4,1)}
+.card.revealed .banner{transform:translate(-50%,0) scale(1);opacity:1}
+.part{position:fixed;width:6px;height:6px;border-radius:50%;background:#f0e6d2;box-shadow:0 0 8px #c8aa6e;z-index:41;pointer-events:none;animation:fly 1s cubic-bezier(.1,.7,.3,1) forwards}
+.part.b{background:#9ff5ec;box-shadow:0 0 8px #0ac8b9}
+.checks{display:flex;flex-direction:column;gap:1px;font-size:12px;color:#ffe9b0}
+.checks small{color:var(--muted);font-size:10px}
+.card.revealed .checks>*{opacity:0;transform:translateX(-8px);animation:pin .35s ease-out forwards}
+.card.revealed .checks>*:nth-child(2){animation-delay:.15s}
+.card.revealed .checks>*:nth-child(3){animation-delay:.3s}
+.card.revealed .checks>*:nth-child(4){animation-delay:.45s}
 footer{color:var(--muted);font-size:11px;text-align:center;margin-top:30px;line-height:1.6}
 footer a{color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -161,6 +194,7 @@ footer a{color:var(--muted)}
       <div class="opt">
         <label class="t">Partie</label>
         <label class="check"><input type="checkbox" id="twoTeams"> <span>Deux équipes (5v5 en partie perso)<small>10 joueurs, aucun champion en double</small></span></label>
+        <label class="check"><input type="checkbox" id="forceProc"> <span>Forcer le Pick parfait ✦<small>Sinon 10 % de chance à chaque tirage : un joueur tombe sur un champion à son poste avec les runes, sorts et build les plus joués (stats op.gg)</small></span></label>
         <label class="check"><input type="checkbox" id="noRepeat"> <span>Pas de répétition<small>Évite les champions déjà tirés pendant la session</small></span></label>
         <div class="hist" id="hist"></div>
       </div>
@@ -175,6 +209,7 @@ footer a{color:var(--muted)}
   </footer>
 </div>
 <div class="toast" id="toast"></div>
+<div class="veil" id="veil"></div>
 
 <script>
 "use strict";
@@ -313,7 +348,7 @@ const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catc
 const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800); };
 
 /* ---------- données ---------- */
-let V, CHAMPS = [], CH = {}, TREES = [], PERK = {}, SUMS = [], SUM = {}, BOOTS = [], LEG = [], ITEM = {};
+let V, CHAMPS = [], CH = {}, TREES = [], PERK = {}, SUMS = [], SUM = {}, SUM_KEY = {}, BOOTS = [], LEG = [], ITEM = {};
 
 function rolesOf(c) {
   if (ROLE_MAP[c.id]) return ROLE_MAP[c.id];
@@ -332,7 +367,7 @@ async function loadData() {
   const get = f => fetch(`${DD}/cdn/${V}/data/${LANG}/${f}.json`).then(r => { if (!r.ok) throw new Error(f); return r.json(); });
   const [c, ru, su, it] = await Promise.all([get('champion'), get('runesReforged'), get('summoner'), get('item')]);
 
-  CHAMPS = Object.values(c.data).map(x => ({id:x.id, name:x.name, title:x.title, tags:x.tags, info:x.info}));
+  CHAMPS = Object.values(c.data).map(x => ({id:x.id, key:x.key, name:x.name, title:x.title, tags:x.tags, info:x.info}));
   CHAMPS.forEach(x => { x.roles = rolesOf(x); CH[x.id] = x; });
 
   TREES = ru;
@@ -340,19 +375,21 @@ async function loadData() {
   for (const t of ru) PERK[t.id] = {name:t.name, icon:t.icon};
   for (const [id, s] of Object.entries(SHARD_DEFS)) PERK['s' + id] = s;
 
-  SUMS = Object.values(su.data).filter(s => s.modes.includes('CLASSIC')).map(s => ({id:s.id, name:s.name}));
+  SUMS = Object.values(su.data).filter(s => s.modes.includes('CLASSIC')).map(s => ({id:s.id, key:s.key, name:s.name}));
   SUMS.forEach(s => SUM[s.id] = s);
+  for (const s of Object.values(su.data)) { SUM_KEY[s.key] = s.id; SUM[s.id] ||= {id:s.id, name:s.name}; }
 
   const seen = new Set();
+  for (const [id, v] of Object.entries(it.data)) ITEM[id] = {name:v.name};
   for (const [id, v] of Object.entries(it.data)) {
     if (id.length > 4 || !v.maps?.['11'] || !v.gold?.purchasable || v.inStore === false || v.requiredChampion || v.requiredAlly) continue;
     const tags = v.tags || [];
     if (tags.includes('Consumable') || tags.includes('Trinket')) continue;
     if (seen.has(v.name)) continue;
     // bottes classiques (niveau 2) : pas les versions améliorées, difficiles à reconnaître
-    if (tags.includes('Boots')) { if (v.depth === 2) { BOOTS.push(id); seen.add(v.name); ITEM[id] = {name:v.name}; } continue; }
+    if (tags.includes('Boots')) { if (v.depth === 2) { BOOTS.push(id); seen.add(v.name); } continue; }
     if (v.into && v.into.length) continue;
-    if (v.gold.total >= 2200) { LEG.push(id); seen.add(v.name); ITEM[id] = {name:v.name}; }
+    if (v.gold.total >= 2200) { LEG.push(id); seen.add(v.name); }
   }
 }
 
@@ -387,7 +424,7 @@ function opts() {
     theme: $('#theme').value, duo: $('#duoMode').value, champsOnly: $('#champsOnly').checked, roles: $('#roles').checked,
     sums: $('#sums').value, build: $('#build').checked, defis: $('#defis').checked,
     players: $('#players').value, shufflePlayers: $('#shufflePlayers').checked,
-    twoTeams: $('#twoTeams').checked, noRepeat: $('#noRepeat').checked,
+    twoTeams: $('#twoTeams').checked, noRepeat: $('#noRepeat').checked, forceProc: $('#forceProc').checked,
   };
 }
 function saveOpts() { store.set('tb-opts', opts()); }
@@ -404,13 +441,14 @@ function usedIds(except) {
   return u;
 }
 
-function rollChamp(team, p) {
+function rollChamp(team, p, forceRole = false) {
   const o = opts(), used = usedIds(p), th = team.theme;
   const free = list => list.filter(c => !used.has(c.id));
   const fresh = list => o.noRepeat ? list.filter(c => !drawn.has(c.id)) : list;
-  const base = o.roles ? CHAMPS.filter(c => c.roles.includes(p.r)) : CHAMPS;
+  const base = o.roles || forceRole ? CHAMPS.filter(c => c.roles.includes(p.r)) : CHAMPS;
   const tries = [];
-  if (th) {
+  if (th && forceRole) tries.push(base.filter(c => th.test(c, p.r)));
+  else if (th) {
     if (th.strict) tries.push(CHAMPS.filter(c => th.test(c, p.r)));
     else { tries.push(base.filter(c => th.test(c, p.r))); tries.push(CHAMPS.filter(c => th.test(c, p.r))); }
   }
@@ -448,7 +486,80 @@ function rollBuild(champId) {
 
 function rollDefi() { return rnd(DEFIS.length); }
 
+/* ---------- Pick parfait : 10 % de chance par tirage ---------- */
+const PROC_CHANCE = 0.10;
+const OPGG_ROLE = {top:'TOP', jungle:'JUNGLE', mid:'MID', adc:'ADC', support:'SUPPORT'};
+// pages de secours si op.gg ne répond pas : [arbre, clé de voûte, mineures, arbre secondaire, mineures, fragments]
+const ARCH = {
+  marksman:  {ru:[8000, 8008, [9111, 9104, 8017], 8300, [8345, 8347], [5005, 5008, 5011]], boots:'3006', items:['3031','3072','3085','3033','3046','6672','3032','3094','3153','3087']},
+  mage:      {ru:[8200, 8229, [8226, 8210, 8237], 8300, [8345, 8347], [5008, 5008, 5001]], boots:'3020', items:['3089','3135','3157','6655','6653','4645','3165','3102','4633','2503']},
+  assassin:  {ru:[8100, 8112, [8126, 8140, 8105], 8000, [9111, 8014], [5008, 5008, 5011]], boots:'3158', items:['3142','3179','6697','6698','6694','3156','3026','3071','6699','6676']},
+  fighter:   {ru:[8000, 8010, [9111, 9105, 8299], 8400, [8444, 8451], [5005, 5008, 5011]], boots:'3047', items:['3071','3053','6333','3748','3181','3078','3026','3153','6609','6610']},
+  tank:      {ru:[8400, 8437, [8446, 8444, 8451], 8300, [8345, 8347], [5007, 5010, 5011]], boots:'3047', items:['3083','3084','3075','3143','3068','3065','4401','6665','3110','3742']},
+  enchanter: {ru:[8200, 8214, [8226, 8210, 8237], 8400, [8463, 8453], [5007, 5008, 5011]], boots:'3158', items:['3107','3222','3504','6617','6616','6620','2065','3190']},
+  supTank:   {ru:[8400, 8439, [8401, 8444, 8242], 8300, [8345, 8347], [5007, 5010, 5011]], boots:'3111', items:['3190','3109','3050','3107','3742','3110','3083','3068']},
+};
+function archetype(c, role) {
+  const t = c.tags;
+  if (role === 'adc' && t.includes('Marksman')) return 'marksman';
+  if (role === 'support') {
+    if (t.includes('Tank')) return 'supTank';
+    if (t.includes('Assassin')) return 'assassin';
+    return t[0] === 'Support' ? 'enchanter' : 'mage';
+  }
+  return {Marksman:'marksman', Mage:'mage', Assassin:'assassin', Tank:'tank', Fighter:'fighter', Support:'enchanter'}[t[0]] || 'fighter';
+}
+function fallbackPerfect(p) {
+  const c = CH[p.c], a = archetype(c, p.r), A = ARCH[a], R = A.ru;
+  p.ru = {p:R[0], k:R[1], pm:R[2], s:R[3], sm:R[4], sh:R[5]};
+  p.s = {top:['SummonerFlash','SummonerTeleport'], jungle:['SummonerSmite','SummonerFlash'], mid:['SummonerFlash','SummonerDot'],
+         adc:['SummonerFlash','SummonerHeal'], support:['SummonerFlash', a === 'enchanter' ? 'SummonerExhaust' : 'SummonerDot']}[p.r];
+  if (opts().build) {
+    const apItems = (a === 'fighter' || a === 'assassin') && c.info.magic > c.info.attack ? ARCH.mage : A;
+    const items = shuffle(apItems.items.filter(id => ITEM[id])).slice(0, c.id === 'Cassiopeia' ? 6 : 5);
+    p.it = c.id === 'Cassiopeia' ? items : [apItems.boots, ...items];
+  } else p.it = [];
+  p.src = 'local';
+}
+const opggCache = {};
+function opggPerfect(p) {
+  const c = CH[p.c], url = `https://lol-api-champion.op.gg/api/EUW/champions/ranked/${c.key}/${OPGG_ROLE[p.r]}`;
+  const ctrl = new AbortController(); setTimeout(() => ctrl.abort(), 4000);
+  opggCache[url] ||= fetch(url, {signal:ctrl.signal}).then(r => r.ok ? r.json() : null).then(j => j && j.data).catch(() => null);
+  return opggCache[url].then(d => {
+    if (!d) { delete opggCache[url]; return false; }
+    const ru = d.runes?.[0], sp = d.summoner_spells?.[0];
+    if (!ru || !sp) return false;
+    const [k, ...pm] = ru.primary_rune_ids;
+    const runeIds = [ru.primary_page_id, k, ...pm, ru.secondary_page_id, ...ru.secondary_rune_ids];
+    if (pm.length !== 3 || ru.secondary_rune_ids.length !== 2 || runeIds.some(id => !PERK[id])) return false;
+    const sh = (ru.stat_mod_ids || []).length === 3 && ru.stat_mod_ids.every(id => SHARD_DEFS[id]) ? ru.stat_mod_ids : p.ru.sh;
+    const sums = sp.ids.map(k => SUM_KEY[k]).filter(Boolean);
+    p.ru = {p:ru.primary_page_id, k, pm, s:ru.secondary_page_id, sm:ru.secondary_rune_ids, sh};
+    if (sums.length === 2) p.s = sums.includes('SummonerSmite') ? ['SummonerSmite', ...sums.filter(x => x !== 'SummonerSmite')] : sums;
+    if (opts().build) {
+      const items = [];
+      for (const list of [d.core_items?.[0]?.ids || [], ...(d.last_items || []).map(x => x.ids)])
+        for (const id of list) if (ITEM[id] && !items.includes(String(id)) && items.length < 5) items.push(String(id));
+      const boots = d.boots?.[0]?.ids?.[0];
+      if (items.length >= 3) p.it = [...(boots && ITEM[boots] ? [String(boots)] : []), ...items];
+    }
+    p.src = 'opgg';
+    return true;
+  });
+}
+// rend le pick parfait tout de suite (version de secours), puis le complète avec op.gg
+function makePerfect(team, p) {
+  if (!CH[p.c].roles.includes(p.r)) p.c = rollChamp(team, p, true);
+  drawn.add(p.c);
+  fallbackPerfect(p);
+  p.perfect = true;
+  p.procAnim = true;
+  p.ready = opggPerfect(p).catch(() => false);
+}
+
 function fillPick(team, p, what = 'all') {
+  if (what !== 'defi') { p.perfect = false; p.src = null; }
   if (what === 'all' || what === 'champ') { p.c = rollChamp(team, p); animate.add(p); }
   if (what === 'all' || what === 'runes') p.ru = rollRunes();
   if (what === 'all' || what === 'sums') p.s = rollSums(p.r);
@@ -500,6 +611,10 @@ function generate() {
       } else fillPick(team, p);
     }
   }
+  if (o.forceProc || Math.random() < PROC_CHANCE) {
+    const cands = state.teams.flatMap(t => t.picks.filter(p => !p.l && !(duoOf(t) && (p === t.picks[3] || p === t.picks[4]))).map(p => [t, p]));
+    if (cands.length) { const [t, p] = pick(cands); makePerfect(t, p); }
+  }
   store.set('tb-history', [...drawn]);
   history_ui();
   render();
@@ -533,7 +648,11 @@ function cardHTML(team, p, ti, pi) {
   const c = CH[p.c], role = ROLES.find(r => r.k === p.r), ru = p.ru;
   const perkImg = (id, cls, extra = '') => `<img class="ico ${cls}" src="${img.perk(id)}" alt="${esc(PERK[id]?.name || '')}" title="${esc(PERK[id]?.name || '')}" loading="lazy" ${extra}>`;
   const offRole = !c.roles.includes(p.r) ? ' · hors-poste' : '';
-  return `<article class="card${p.l ? ' locked' : ''}" data-t="${ti}" data-p="${pi}">
+  const anim = p.procAnim; p.procAnim = false;
+  const champsOnly = opts().champsOnly;
+  const checks = p.perfect ? `<div class="checks"><span>✔ Rôle principal</span>${champsOnly ? '' : `<span>✔ Runes ${p.src === 'opgg' ? 'les plus jouées' : 'cohérentes'}</span><span>✔ Sorts adaptés</span>${p.it?.length ? '<span>✔ Build cohérent</span>' : ''}`}${p.src === 'opgg' && !champsOnly ? '<small>Stats op.gg · patch actuel</small>' : ''}</div>` : '';
+  return `<article class="card${p.l ? ' locked' : ''}${p.perfect ? (anim ? ' proc-pending' : ' perfect') : ''}" data-t="${ti}" data-p="${pi}">
+    ${p.perfect ? '<div class="banner">✦ PICK PARFAIT ✦</div>' : ''}
     <div class="art">
       <img class="splash" src="${img.champLoad(c.id)}" alt="">
       <div class="role"><img src="${img.role(p.r)}" alt="">${role.n}</div>
@@ -543,7 +662,8 @@ function cardHTML(team, p, ti, pi) {
       ${animate.has(p) ? `<div class="spin"><img alt=""></div>` : ''}
     </div>
     <div class="body">
-      ${opts().champsOnly ? '' : `<div class="sec">
+      ${checks}
+      ${champsOnly ? '' : `<div class="sec">
         <div class="lbl">Sorts <button class="mini" data-a="sums" title="Relancer les sorts">↻</button></div>
         ${p.s.map(id => `<img class="ico" src="${img.sum(id)}" alt="${esc(SUM[id]?.name)}" title="${esc(SUM[id]?.name)}">`).join('')}
       </div>
@@ -574,6 +694,7 @@ function cardHTML(team, p, ti, pi) {
 
 function render() {
   if (!state) return;
+  $('#veil').classList.remove('on'); $('#out').classList.remove('dimmed');
   const two = state.teams.length === 2;
   $('#out').innerHTML = state.teams.map((team, ti) => {
     const d = duoOf(team);
@@ -595,6 +716,8 @@ function runSpins() {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   document.querySelectorAll('.spin').forEach((el, i) => {
     const im = el.querySelector('img');
+    const card = el.closest('.card');
+    if (card.classList.contains('proc-pending')) { procSequence(card, el, reduce); return; }
     if (reduce) { el.remove(); return; }
     const frames = 7 + i * 2;
     let n = 0;
@@ -606,6 +729,55 @@ function runSpins() {
     tick();
   });
   animate.clear();
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function burst(x, y) {
+  for (let i = 0; i < 34; i++) {
+    const d = document.createElement('i'); d.className = 'part' + (i % 3 ? '' : ' b');
+    const a = Math.random() * Math.PI * 2, r = 90 + Math.random() * 190;
+    d.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.cos(a) * r}px;--dy:${Math.sin(a) * r}px;animation-delay:${Math.random() * 80}ms`;
+    document.body.appendChild(d); setTimeout(() => d.remove(), 1300);
+  }
+}
+let procRun = 0;
+async function procSequence(card, sp, reduce) {
+  const run = ++procRun, ti = +card.dataset.t, pi = +card.dataset.p;
+  const team = state.teams[ti], p = team.picks[pi], ready = p.ready || Promise.resolve(false);
+  const alive = () => run === procRun && card.isConnected;
+  const swap = () => { // remplace la carte par sa version finale (stats op.gg à jour)
+    const tpl = document.createElement('template'); tpl.innerHTML = cardHTML(team, p, ti, pi).trim();
+    const el = tpl.content.firstElementChild; card.replaceWith(el); return el;
+  };
+  if (reduce) { await ready; if (alive()) swap(); return; }
+  let spinning = true;
+  (function tick() { if (!spinning || !card.isConnected) return; sp.querySelector('img').src = img.champIcon(pick(CHAMPS).id); setTimeout(tick, 45); })();
+  await sleep(900); if (!alive()) return;
+  card.scrollIntoView?.({block:'nearest', behavior:'smooth'});
+  const veil = $('#veil');
+  const center = () => { const r = card.getBoundingClientRect(); return [r.left + r.width / 2, r.top + 115]; };
+  let [x, y] = center();
+  veil.style.setProperty('--x', x + 'px'); veil.style.setProperty('--y', y + 'px');
+  card.classList.add('lucky'); veil.classList.add('on'); $('#out').classList.add('dimmed');
+  await sleep(500); if (!alive()) return;
+  card.classList.add('charging');
+  await Promise.all([sleep(900), Promise.race([ready, sleep(3000)])]);
+  spinning = false; if (!alive()) return;
+  // révélation
+  const el = swap();
+  el.classList.remove('perfect'); el.classList.add('lucky', 'revealed');
+  [x, y] = (() => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + 115]; })();
+  const f = document.createElement('div'); f.className = 'flash'; f.style.setProperty('--x', x + 'px'); f.style.setProperty('--y', y + 'px');
+  document.body.appendChild(f); setTimeout(() => f.remove(), 800);
+  burst(x, y);
+  const sh = document.createElement('div'); sh.className = 'shine'; el.querySelector('.art').appendChild(sh);
+  toast(`✦ PICK PARFAIT${p.p ? ' pour ' + p.p : ''} : ${CH[p.c].name} ✦`);
+  await sleep(1400); if (run !== procRun || !el.isConnected) return;
+  veil.classList.remove('on'); $('#out').classList.remove('dimmed');
+  el.classList.remove('lucky', 'revealed'); el.classList.add('perfect');
+  // op.gg a répondu après la révélation : on met la carte à jour
+  if (p.src !== 'opgg') ready.then(ok => { if (ok && run === procRun && el.isConnected && p.perfect) {
+    const tpl = document.createElement('template'); tpl.innerHTML = cardHTML(team, p, ti, pi).trim(); el.replaceWith(tpl.content.firstElementChild); } });
 }
 
 $('#out').addEventListener('click', e => {
@@ -627,7 +799,7 @@ function asText() {
     const lines = team.picks.map(p => {
       const role = ROLES.find(r => r.k === p.r).n;
       const ru = p.ru;
-      let l = `**${role}**${p.p ? ' (' + p.p + ')' : ''} : **${CH[p.c].name}**`;
+      let l = `${p.perfect ? '✦ ' : ''}**${role}**${p.p ? ' (' + p.p + ')' : ''} : **${CH[p.c].name}**${p.perfect ? ' — PICK PARFAIT ✦' : ''}`;
       if (!opts().champsOnly) l += ` · ${p.s.map(id => SUM[id].name).join(' + ')} · ${PERK[ru.k].name} (${PERK[ru.p].name} / ${PERK[ru.s].name})`;
       if (p.it?.length && !opts().champsOnly) l += `\n   Build : ${p.it.map(id => ITEM[id]?.name).join(', ')}`;
       if (p.d != null) l += `\n   Défi : ${DEFIS[p.d]}`;
@@ -639,7 +811,7 @@ function asText() {
 
 function encodeState() {
   const s = {v:1, teams: state.teams.map(t => ({th: t.theme ? [t.theme.key, t.theme.param || null] : null, du: t.duo,
-    pk: t.picks.map(p => [p.r, p.c, p.p || '', p.s, [p.ru.p, p.ru.k, ...p.ru.pm, p.ru.s, ...p.ru.sm, ...p.ru.sh], p.it || [], p.d])}))};
+    pk: t.picks.map(p => [p.r, p.c, p.p || '', p.s, [p.ru.p, p.ru.k, ...p.ru.pm, p.ru.s, ...p.ru.sm, ...p.ru.sh], p.it || [], p.d, p.perfect ? (p.src === 'opgg' ? 2 : 1) : 0])}))};
   const bytes = new TextEncoder().encode(JSON.stringify(s));
   let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -649,9 +821,9 @@ function decodeState(str) {
     const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
     const s = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
     return {teams: s.teams.map(t => ({theme: t.th ? makeTheme(t.th[0], t.th[1]) : null, duo: t.du,
-      picks: t.pk.map(([r, c, pl, su, ru, it, d]) => {
+      picks: t.pk.map(([r, c, pl, su, ru, it, d, pf]) => {
         if (!CH[c]) throw new Error('champion inconnu');
-        return {r, c, p:pl, s:su, ru:{p:ru[0], k:ru[1], pm:ru.slice(2, 5), s:ru[5], sm:ru.slice(6, 8), sh:ru.slice(8, 11)}, it, d, l:false};
+        return {r, c, p:pl, s:su, ru:{p:ru[0], k:ru[1], pm:ru.slice(2, 5), s:ru[5], sm:ru.slice(6, 8), sh:ru.slice(8, 11)}, it, d, l:false, perfect:!!pf, src:pf === 2 ? 'opgg' : pf ? 'local' : null};
       })}))};
   } catch (e) { console.warn('Lien invalide', e); return null; }
 }
