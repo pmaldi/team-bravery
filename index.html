@@ -866,27 +866,28 @@ if ($PSVersionTable.PSVersion.Major -ge 6) { $sk = @{ SkipCertificateCheck = $tr
   [Net.ServicePointManager]::CertificatePolicy = New-Object TBTrust
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 }
 $h = @{ Authorization = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("riot:$tok")) }
-function R($m, $u, $b) {
+function Lcu($m, $u, $b) {
   $a = @{ Method = $m; Uri = "https://127.0.0.1:$port$u"; Headers = $h; ContentType = 'application/json; charset=utf-8' } + $sk
   if ($null -ne $b) { $a.Body = [Text.Encoding]::UTF8.GetBytes(($b | ConvertTo-Json -Depth 12 -Compress)) }
   Invoke-RestMethod @a }
 try {
-  foreach ($pg in @(R GET '/lol-perks/v1/pages')) { if ($pg.name -like 'Team Bravery*' -and $pg.isDeletable) { R DELETE "/lol-perks/v1/pages/$($pg.id)" $null | Out-Null } }
-  try { R POST '/lol-perks/v1/pages' $d.runes | Out-Null; Write-Host 'Page de runes importee.' -ForegroundColor Green }
+  foreach ($pg in @(Lcu GET '/lol-perks/v1/pages')) { if ($pg.name -like 'Team Bravery*' -and $pg.isDeletable) { Lcu DELETE "/lol-perks/v1/pages/$($pg.id)" $null | Out-Null } }
+  try { Lcu POST '/lol-perks/v1/pages' $d.runes | Out-Null; Write-Host 'Page de runes importee.' -ForegroundColor Green }
   catch {
-    $cp = R GET '/lol-perks/v1/currentpage'
-    if ($cp.isDeletable -and (Read-Host "Tes pages de runes sont pleines. Remplacer la page actuelle '$($cp.name)' ? (o/n)") -eq 'o') {
-      R DELETE "/lol-perks/v1/pages/$($cp.id)" $null | Out-Null; R POST '/lol-perks/v1/pages' $d.runes | Out-Null; Write-Host 'Page de runes importee.' -ForegroundColor Green
+    Write-Host "Creation de la page refusee ($($_.Exception.Message))" -ForegroundColor Yellow
+    $cp = Lcu GET '/lol-perks/v1/currentpage'
+    if ($cp.isDeletable -and (Read-Host "Si tes pages de runes sont pleines, remplacer la page actuelle '$($cp.name)' ? (o/n)") -eq 'o') {
+      Lcu DELETE "/lol-perks/v1/pages/$($cp.id)" $null | Out-Null; Lcu POST '/lol-perks/v1/pages' $d.runes | Out-Null; Write-Host 'Page de runes importee.' -ForegroundColor Green
     } else { Write-Host 'Runes non importees : supprime une page de runes puis recolle le script.' -ForegroundColor Yellow } }
 } catch { Write-Host "Runes : echec ($($_.Exception.Message))" -ForegroundColor Red }
 if ($d.set) { try {
-  $sid = (R GET '/lol-summoner/v1/current-summoner').summonerId
-  $cur = R GET "/lol-item-sets/v1/item-sets/$sid/sets"
+  $sid = (Lcu GET '/lol-summoner/v1/current-summoner').summonerId
+  $cur = Lcu GET "/lol-item-sets/v1/item-sets/$sid/sets"
   $sets = @(@($cur.itemSets) | Where-Object { $_ -and $_.title -notlike 'Team Bravery*' }) + @($d.set)
-  R PUT "/lol-item-sets/v1/item-sets/$sid/sets" @{ accountId = $cur.accountId; itemSets = $sets; timestamp = $cur.timestamp } | Out-Null
+  Lcu PUT "/lol-item-sets/v1/item-sets/$sid/sets" @{ accountId = $cur.accountId; itemSets = $sets; timestamp = $cur.timestamp } | Out-Null
   Write-Host 'Set d objets importe (onglet Sets de la boutique en jeu).' -ForegroundColor Green
 } catch { Write-Host "Objets : echec ($($_.Exception.Message))" -ForegroundColor Red } }
-try { R PATCH '/lol-champ-select/v1/session/my-selection' @{ spell1Id = $d.spells[0]; spell2Id = $d.spells[1] } | Out-Null; Write-Host 'Sorts d invocateur regles.' -ForegroundColor Green } catch {}
+try { Lcu PATCH '/lol-champ-select/v1/session/my-selection' @{ spell1Id = $d.spells[0]; spell2Id = $d.spells[1] } | Out-Null; Write-Host 'Sorts d invocateur regles.' -ForegroundColor Green } catch {}
 }
 `;
 }
