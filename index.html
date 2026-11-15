@@ -192,6 +192,7 @@ footer a{color:var(--muted)}
         </select>
         <label class="check"><input type="checkbox" id="champsOnly"> <span>Champions seulement<small>Juste les persos : pas de runes, de sorts ni de build</small></span></label>
         <label class="check"><input type="checkbox" id="build" checked> <span>Build aléatoire<small>Bottes + objets légendaires (+ familier en jungle, objet de support en support)</small></span></label>
+        <label class="check"><input type="checkbox" id="logicBuild"> <span>Build logique<small>Toujours au hasard, mais adapté au champion : AP, AD, crit, létalité, tank, enchanteur…</small></span></label>
         <label class="check"><input type="checkbox" id="defis"> <span>Défis fun<small>Une contrainte par joueur (clique dessus pour en changer)</small></span></label>
       </div>
       <div class="opt">
@@ -407,7 +408,7 @@ async function loadData() {
   for (const s of Object.values(su.data)) { SUM_KEY[s.key] = s.id; SUM[s.id] ||= {id:s.id, name:s.name}; }
 
   const seen = new Set();
-  for (const [id, v] of Object.entries(it.data)) ITEM[id] = {name:v.name};
+  for (const [id, v] of Object.entries(it.data)) ITEM[id] = {name:v.name, tags:v.tags || []};
   for (const [id, v] of Object.entries(it.data)) {
     if (id.length > 4 || !v.maps?.['11'] || !v.gold?.purchasable || v.inStore === false || v.requiredChampion || v.requiredAlly) continue;
     const tags = v.tags || [];
@@ -449,7 +450,7 @@ const animate = new Set();
 function opts() {
   return {
     theme: $('#theme').value, duo: $('#duoMode').value, champsOnly: $('#champsOnly').checked, roles: $('#roles').checked,
-    sums: $('#sums').value, build: $('#build').checked, defis: $('#defis').checked,
+    sums: $('#sums').value, build: $('#build').checked, logicBuild: $('#logicBuild').checked, defis: $('#defis').checked,
     players: $('#players').value, shufflePlayers: $('#shufflePlayers').checked,
     twoTeams: $('#twoTeams').checked, noRepeat: $('#noRepeat').checked, forceProc: $('#forceProc').checked, procCount: +$('#procCount').value || 1,
   };
@@ -510,8 +511,51 @@ const PETS = ['1101', '1102', '1103'];
 // objet de support (version finale de l Atlas) : Opposition céleste, Rêve éveillé, Pique de Zaz'Zak, Traîneau du solstice, Mélodie du sang
 const SUPP = ['3869', '3870', '3871', '3876', '3877'];
 const ROLE_ITEM = {jungle: PETS, support: SUPP};
+// build logique : chaque emplacement pioche dans une famille d objets adaptée au champion
+const tagOf = id => ITEM[id]?.tags || [];
+const has = (id, ...t) => t.some(x => tagOf(id).includes(x));
+const SUPP_ONLY = ['3190', '3109', '3050']; // Solari, Vœu du chevalier, Convergence de Zeke
+const POOLS = {
+  crit:     id => (has(id, 'CriticalStrike') || has(id, 'AttackSpeed') && has(id, 'Damage', 'OnHit') || has(id, 'Damage') && has(id, 'LifeSteal') && !has(id, 'Health', 'SpellVamp')) && !has(id, 'SpellDamage', 'Health'),
+  lethal:   id => has(id, 'Damage') && (has(id, 'ArmorPenetration') || has(id, 'AbilityHaste') && !has(id, 'Health', 'Mana')) && !has(id, 'CriticalStrike', 'AttackSpeed', 'SpellDamage'),
+  bruiser:  id => has(id, 'Damage') && (has(id, 'Health', 'Armor', 'SpellBlock') || has(id, 'LifeSteal') && has(id, 'OnHit', 'SpellVamp', 'Tenacity')) && !has(id, 'CriticalStrike', 'SpellDamage', 'Mana'),
+  mage:     id => has(id, 'SpellDamage') && !has(id, 'Damage', 'AttackSpeed', 'ManaRegen'),
+  tank:     id => has(id, 'Health', 'Armor', 'SpellBlock') && !has(id, 'Damage', 'SpellDamage', 'CriticalStrike', 'AttackSpeed', 'ManaRegen') && !SUPP_ONLY.includes(id),
+  supTank:  id => POOLS.tank(id) || SUPP_ONLY.includes(id),
+  ench:     id => has(id, 'ManaRegen') && !has(id, 'Damage', 'CriticalStrike') || id === '3190' || id === '3109',
+};
+// [familles par emplacement, bottes possibles, familier de jungle, objet de support]
+const LOGIC = {
+  marksman:  [['crit', 'crit', 'crit', 'crit', 'crit'], ['3006', '3006', '3009'], ['1102', '1101'], ['3877']],
+  assassin:  [['lethal', 'lethal', 'lethal', 'bruiser', 'lethal'], ['3158', '3047', '3111', '3009'], ['1101', '1102'], ['3877']],
+  fighter:   [['bruiser', 'bruiser', 'tank', 'bruiser', 'lethal'], ['3047', '3111', '3158'], ['1101', '1102', '1103'], ['3877', '3869']],
+  apFighter: [['mage', 'mage', 'tank', 'mage', 'tank'], ['3020', '3111', '3047'], ['1101', '1103'], ['3871']],
+  mage:      [['mage', 'mage', 'mage', 'mage', 'mage'], ['3020', '3020', '3158'], ['1101', '1102'], ['3871']],
+  tank:      [['tank', 'tank', 'tank', 'tank', 'tank'], ['3047', '3111'], ['1103'], ['3869', '3877']],
+  supTank:   [['supTank', 'supTank', 'tank', 'supTank', 'tank'], ['3047', '3111', '3158'], ['1103'], ['3869', '3877']],
+  enchanter: [['ench', 'ench', 'ench', 'tank', 'ench'], ['3158', '3009', '3020'], ['1101', '1102'], ['3870', '3876']],
+};
+function logicProfile(c, role) {
+  const a = archetype(c, role), ap = c.info.magic > c.info.attack;
+  if (a === 'assassin' && ap) return 'mage';
+  if (a === 'fighter' && ap) return 'apFighter';
+  if (a === 'marksman' && ap) return 'apFighter';
+  return a;
+}
+function rollLogicBuild(champId, role) {
+  const c = CH[champId], [slots, boots, pets, supps] = LOGIC[logicProfile(c, role)];
+  const noBoots = champId === 'Cassiopeia';
+  const extra = role === 'jungle' ? [pick(pets.filter(id => ITEM[id]))] : role === 'support' ? [pick(supps.filter(id => ITEM[id]))] : [];
+  const n = 6 - extra.length - (noBoots ? 0 : 1), out = [];
+  for (const fam of [...slots, ...slots].slice(0, n)) {
+    const choice = shuffle(LEG.filter(id => POOLS[fam](id) && !out.includes(id)))[0] || shuffle(LEG.filter(id => !out.includes(id)))[0];
+    out.push(choice);
+  }
+  return [...extra.filter(Boolean), ...(noBoots ? [] : [pick(boots.filter(id => ITEM[id]))]), ...out].filter(Boolean);
+}
 function rollBuild(champId, role) {
   if (!opts().build) return [];
+  if (opts().logicBuild && CH[champId]) return rollLogicBuild(champId, role);
   const noBoots = champId === 'Cassiopeia', pool = (ROLE_ITEM[role] || []).filter(id => ITEM[id]);
   const pet = pool.length ? [pick(pool)] : [];
   return [...pet, ...(noBoots ? [] : [pick(BOOTS)]), ...shuffle(LEG).slice(0, 6 - pet.length - (noBoots ? 0 : 1))].filter(Boolean);
@@ -601,7 +645,7 @@ function fillPick(team, p, what = 'all') {
   if (what === 'all' || what === 'champ') { p.c = rollChamp(team, p); animate.add(p); }
   if (what === 'all' || what === 'runes') p.ru = rollRunes();
   if (what === 'all' || what === 'sums') p.s = rollSums(p.r);
-  if (what === 'all' || what === 'build' || (what === 'champ' && (p.c === 'Cassiopeia' || p.it?.length && !p.it.some(id => BOOTS.includes(id))))) p.it = rollBuild(p.c, p.r);
+  if (what === 'all' || what === 'build' || (what === 'champ' && (opts().logicBuild || p.c === 'Cassiopeia' || p.it?.length && !p.it.some(id => BOOTS.includes(id))))) p.it = rollBuild(p.c, p.r);
   if (what === 'all' || what === 'defi') p.d = opts().defis ? rollDefi() : null;
   if (p.c) drawn.add(p.c);
 }
