@@ -8,6 +8,7 @@ A single static page (`index.html`), with no dependencies. Data and icons come l
 - One champion per role (Top, Jungle, Mid, ADC, Support) with full runes (keystone, minors, secondary tree, stat shards), summoner spells (Smite always on the jungler) and a random build (the jungler also gets a jungle companion, the support a support item)
 - Reroll a whole role, or just its champion, runes, spells or build
 - Reset button to go back to a clean page, without an imported draw
+- "Import" button on each card: copies a PowerShell script (Windows) that sends the rune page and the item set straight into your League client through its local API, and sets your summoner spells during champ select
 - Lock a role so it stays put when you generate again
 - Team themes: Wombo combo, Protect the carry, Poke, Global ults, Invisibles, Dive, Immortals, Full AP/AD/tanks/assassins, Pain mode, Easy mode, Single region, Same initial, Surprise theme
 - Bot lane synergy (curated ADC + support duos)

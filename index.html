@@ -107,6 +107,13 @@ details.opts[open] summary::before{transform:rotate(90deg)}
 
 .status{text-align:center;padding:60px 16px;color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(30px);background:var(--panel2);border:1px solid var(--gold);color:var(--gold2);padding:10px 16px;border-radius:8px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+dialog.imp{background:var(--panel2);color:inherit;border:1px solid var(--gold);border-radius:12px;max-width:560px;width:calc(100% - 32px);padding:20px}
+dialog.imp::backdrop{background:rgba(0,0,0,.6)}
+dialog.imp h3{margin:0 0 10px;color:var(--gold2)}
+dialog.imp ol{padding-left:20px;line-height:1.6;margin:8px 0}
+dialog.imp small{opacity:.75;display:block;margin-top:8px;line-height:1.4}
+dialog.imp .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+dialog.imp kbd{background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;font-size:.9em}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 /* ===== Pick parfait (proc) ===== */
 @property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
@@ -217,6 +224,17 @@ footer a{color:var(--muted)}
     Projet fan non officiel. Team Bravery n'est ni approuvé ni sponsorisé par Riot Games. League of Legends est une marque de Riot Games, Inc.
   </footer>
 </div>
+<dialog class="imp" id="impDlg">
+  <h3>🎮 Importer dans le jeu</h3>
+  <p id="impWhat"></p>
+  <ol>
+    <li>Lance le client League of Legends (connecté).</li>
+    <li>Ouvre <b>PowerShell</b> : <kbd>Win</kbd> + <kbd>X</kbd> → « Terminal » (ou tape PowerShell dans le menu Démarrer).</li>
+    <li>Clique sur <b>Copier le script</b>, colle-le dans PowerShell (<kbd>Ctrl</kbd> + <kbd>V</kbd> ou clic droit) puis <kbd>Entrée</kbd>.</li>
+  </ol>
+  <small>Windows uniquement. Le script parle seulement à ton client LoL, sur ton PC (API locale du client, comme Porofessor ou Blitz). Il crée une page de runes « Team Bravery » et un set d'objets pour ce champion (visible dans la boutique en jeu) ; il remplace les anciens « Team Bravery ». Pendant la sélection des champions, il règle aussi tes sorts d'invocateur.</small>
+  <div class="row"><button class="btn" id="impClose">Fermer</button><button class="btn primary" id="impCopy">📋 Copier le script</button></div>
+</dialog>
 <div class="toast" id="toast"></div>
 <div class="veil" id="veil"></div>
 
@@ -709,6 +727,7 @@ function cardHTML(team, p, ti, pi) {
       <div class="foot">
         <button class="btn small lock${p.l ? ' on' : ''}" data-a="lock" title="Verrouiller : ce rôle ne bouge plus quand tu régénères">${p.l ? '🔒 Verrouillé' : '🔓 Verrouiller'}</button>
         <button class="btn small" data-a="all" title="Relancer tout ce rôle">🎲 Relancer</button>
+        ${champsOnly ? '' : '<button class="btn small" data-a="import" title="Importer les runes et le build dans le client LoL">🎮 Importer</button>'}
       </div>
     </div>
   </article>`;
@@ -812,10 +831,74 @@ $('#out').addEventListener('click', e => {
   const a = b.dataset.a, p = state.teams[ti].picks[pi];
   if (a === 'lock') { p.l = !p.l; render(); return; }
   if (a === 'defi') { p.d = rollDefi(); render(); return; }
+  if (a === 'import') { openImport(p); return; }
   reroll(ti, pi, a);
 });
 
 /* ---------- export ---------- */
+/* ---------- import dans le client (PowerShell + API locale du client LoL) ---------- */
+function importScript(p) {
+  const c = CH[p.c], ru = p.ru, title = `Team Bravery - ${c.name}`;
+  const data = {
+    runes: {name: title, primaryStyleId: +ru.p, subStyleId: +ru.s, selectedPerkIds: [ru.k, ...ru.pm, ...ru.sm, ...ru.sh].map(Number), current: true},
+    set: p.it?.length ? {title, associatedChampions: [+c.key], associatedMaps: [11], map: 'any', mode: 'any', type: 'custom', sortrank: 0,
+      startedFrom: 'blank', preferredItemSlots: [], uid: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      blocks: [{type: 'Build Team Bravery', items: p.it.map(id => ({id: String(id), count: 1}))}]} : null,
+    spells: p.s.map(id => +SUM[id]?.key).filter(Boolean),
+  };
+  const json = JSON.stringify(data).replace(/[^\x20-\x7e]/g, ch => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));
+  return `& {
+$ErrorActionPreference = 'Stop'
+$d = @'
+${json}
+'@ | ConvertFrom-Json
+$port = $null; $tok = $null
+$lc = Get-Process LeagueClientUx -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $lc) { Write-Host 'Client League of Legends introuvable : lance-le puis recolle le script.' -ForegroundColor Red; return }
+try { $lf = Join-Path (Split-Path $lc.Path) 'lockfile'; $parts = (Get-Content $lf -Raw).Split(':'); $port = $parts[2]; $tok = $parts[3] } catch {}
+if (-not $port) { $cl = (Get-CimInstance Win32_Process -Filter "Name='LeagueClientUx.exe'" | Select-Object -First 1).CommandLine
+  $port = [regex]::Match($cl, '--app-port=(\\d+)').Groups[1].Value; $tok = [regex]::Match($cl, '--remoting-auth-token=([\\w-]+)').Groups[1].Value }
+if (-not $port) { Write-Host 'Impossible de joindre le client (port introuvable).' -ForegroundColor Red; return }
+$sk = @{}
+if ($PSVersionTable.PSVersion.Major -ge 6) { $sk = @{ SkipCertificateCheck = $true } } else {
+  Remove-TypeData System.Array -ErrorAction SilentlyContinue
+  if (-not ('TBTrust' -as [type])) { Add-Type 'using System.Net; using System.Security.Cryptography.X509Certificates; public class TBTrust : ICertificatePolicy { public bool CheckValidationResult(ServicePoint a, X509Certificate b, WebRequest c, int d) { return true; } }' }
+  [Net.ServicePointManager]::CertificatePolicy = New-Object TBTrust
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 }
+$h = @{ Authorization = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("riot:$tok")) }
+function R($m, $u, $b) {
+  $a = @{ Method = $m; Uri = "https://127.0.0.1:$port$u"; Headers = $h; ContentType = 'application/json; charset=utf-8' } + $sk
+  if ($null -ne $b) { $a.Body = [Text.Encoding]::UTF8.GetBytes(($b | ConvertTo-Json -Depth 12 -Compress)) }
+  Invoke-RestMethod @a }
+try {
+  foreach ($pg in @(R GET '/lol-perks/v1/pages')) { if ($pg.name -like 'Team Bravery*' -and $pg.isDeletable) { R DELETE "/lol-perks/v1/pages/$($pg.id)" $null | Out-Null } }
+  try { R POST '/lol-perks/v1/pages' $d.runes | Out-Null; Write-Host 'Page de runes importee.' -ForegroundColor Green }
+  catch {
+    $cp = R GET '/lol-perks/v1/currentpage'
+    if ($cp.isDeletable -and (Read-Host "Tes pages de runes sont pleines. Remplacer la page actuelle '$($cp.name)' ? (o/n)") -eq 'o') {
+      R DELETE "/lol-perks/v1/pages/$($cp.id)" $null | Out-Null; R POST '/lol-perks/v1/pages' $d.runes | Out-Null; Write-Host 'Page de runes importee.' -ForegroundColor Green
+    } else { Write-Host 'Runes non importees : supprime une page de runes puis recolle le script.' -ForegroundColor Yellow } }
+} catch { Write-Host "Runes : echec ($($_.Exception.Message))" -ForegroundColor Red }
+if ($d.set) { try {
+  $sid = (R GET '/lol-summoner/v1/current-summoner').summonerId
+  $cur = R GET "/lol-item-sets/v1/item-sets/$sid/sets"
+  $sets = @(@($cur.itemSets) | Where-Object { $_ -and $_.title -notlike 'Team Bravery*' }) + @($d.set)
+  R PUT "/lol-item-sets/v1/item-sets/$sid/sets" @{ accountId = $cur.accountId; itemSets = $sets; timestamp = $cur.timestamp } | Out-Null
+  Write-Host 'Set d objets importe (onglet Sets de la boutique en jeu).' -ForegroundColor Green
+} catch { Write-Host "Objets : echec ($($_.Exception.Message))" -ForegroundColor Red } }
+try { R PATCH '/lol-champ-select/v1/session/my-selection' @{ spell1Id = $d.spells[0]; spell2Id = $d.spells[1] } | Out-Null; Write-Host 'Sorts d invocateur regles.' -ForegroundColor Green } catch {}
+}
+`;
+}
+let impPick = null;
+function openImport(p) {
+  impPick = p;
+  $('#impWhat').innerHTML = `<b>${esc(CH[p.c].name)}</b> : page de runes${p.it?.length ? ' + set d\'objets' : ''} + sorts (en sélection des champions).`;
+  $('#impDlg').showModal();
+}
+$('#impClose').onclick = () => $('#impDlg').close();
+$('#impCopy').onclick = () => { if (impPick) copy(importScript(impPick), 'Script copié : colle-le dans PowerShell'); };
+
 function asText() {
   if (!state) return '';
   return state.teams.map((team, ti) => {
