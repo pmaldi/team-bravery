@@ -5,7 +5,7 @@ A League of Legends team randomizer, in the spirit of Ultimate Bravery: one clic
 A single static page (`index.html`), with no dependencies. Data and icons come live from Riot's Data Dragon CDN, so the page stays up to date with each patch on its own.
 
 ## Features
-- One champion per role (Top, Jungle, Mid, ADC, Support) with full runes (keystone, minors, secondary tree, stat shards), summoner spells (Smite always on the jungler) and a random build
+- One champion per role (Top, Jungle, Mid, ADC, Support) with full runes (keystone, minors, secondary tree, stat shards), summoner spells (Smite always on the jungler) and a random build (the jungler also gets a jungle companion)
 - Reroll a whole role, or just its champion, runes, spells or build
 - Lock a role so it stays put when you generate again
 - Team themes: Wombo combo, Protect the carry, Poke, Global ults, Invisibles, Dive, Immortals, Full AP/AD/tanks/assassins, Pain mode, Easy mode, Single region, Same initial, Surprise theme

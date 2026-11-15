@@ -183,7 +183,7 @@ footer a{color:var(--muted)}
           <option value="noflash">Sans Saut éclair 😈</option>
         </select>
         <label class="check"><input type="checkbox" id="champsOnly"> <span>Champions seulement<small>Juste les persos : pas de runes, de sorts ni de build</small></span></label>
-        <label class="check"><input type="checkbox" id="build" checked> <span>Build aléatoire<small>Bottes + 5 objets légendaires</small></span></label>
+        <label class="check"><input type="checkbox" id="build" checked> <span>Build aléatoire<small>Bottes + 5 objets légendaires (familier en jungle)</small></span></label>
         <label class="check"><input type="checkbox" id="defis"> <span>Défis fun<small>Une contrainte par joueur (clique dessus pour en changer)</small></span></label>
       </div>
       <div class="opt">
@@ -486,10 +486,13 @@ function rollSums(role) {
   return out.slice(0, 2);
 }
 
-function rollBuild(champId) {
+// familiers de jungle : Ixamandre (1101), Saute-nuages (1102), Chardent (1103)
+const PETS = ['1101', '1102', '1103'];
+function rollBuild(champId, role) {
   if (!opts().build) return [];
-  const noBoots = champId === 'Cassiopeia';
-  return [...(noBoots ? [] : [pick(BOOTS)]), ...shuffle(LEG).slice(0, noBoots ? 6 : 5)].filter(Boolean);
+  const noBoots = champId === 'Cassiopeia', jungle = role === 'jungle';
+  const pet = jungle ? [pick(PETS.filter(id => ITEM[id]))] : [];
+  return [...pet, ...(noBoots ? [] : [pick(BOOTS)]), ...shuffle(LEG).slice(0, 6 - pet.length - (noBoots ? 0 : 1))].filter(Boolean);
 }
 
 function rollDefi() { return rnd(DEFIS.length); }
@@ -524,8 +527,9 @@ function fallbackPerfect(p) {
          adc:['SummonerFlash','SummonerHeal'], support:['SummonerFlash', a === 'enchanter' ? 'SummonerExhaust' : 'SummonerDot']}[p.r];
   if (opts().build) {
     const apItems = (a === 'fighter' || a === 'assassin') && c.info.magic > c.info.attack ? ARCH.mage : A;
-    const items = shuffle(apItems.items.filter(id => ITEM[id])).slice(0, c.id === 'Cassiopeia' ? 6 : 5);
-    p.it = c.id === 'Cassiopeia' ? items : [apItems.boots, ...items];
+    const pet = p.r === 'jungle' ? [{tank:'1103', supTank:'1103', marksman:'1102'}[a] || '1101'] : [];
+    const items = shuffle(apItems.items.filter(id => ITEM[id])).slice(0, (c.id === 'Cassiopeia' ? 6 : 5) - pet.length);
+    p.it = [...pet, ...(c.id === 'Cassiopeia' ? [] : [apItems.boots]), ...items];
   } else p.it = [];
   p.src = 'local';
 }
@@ -546,11 +550,12 @@ function opggPerfect(p) {
     p.ru = {p:ru.primary_page_id, k, pm, s:ru.secondary_page_id, sm:ru.secondary_rune_ids, sh};
     if (sums.length === 2) p.s = sums.includes('SummonerSmite') ? ['SummonerSmite', ...sums.filter(x => x !== 'SummonerSmite')] : sums;
     if (opts().build) {
-      const items = [];
+      const pet = p.r === 'jungle' ? [(d.starter_items || []).flatMap(x => x.ids).map(String).find(id => PETS.includes(id) && ITEM[id]) || p.it[0]] : [];
+      const max = 5 - pet.length, items = [];
       for (const list of [d.core_items?.[0]?.ids || [], ...(d.last_items || []).map(x => x.ids)])
-        for (const id of list) if (ITEM[id] && !items.includes(String(id)) && items.length < 5) items.push(String(id));
+        for (const id of list) if (ITEM[id] && !PETS.includes(String(id)) && !items.includes(String(id)) && items.length < max) items.push(String(id));
       const boots = d.boots?.[0]?.ids?.[0];
-      if (items.length >= 3) p.it = [...(boots && ITEM[boots] ? [String(boots)] : []), ...items];
+      if (items.length >= 3) p.it = [...pet, ...(boots && ITEM[boots] ? [String(boots)] : []), ...items];
     }
     p.src = 'opgg';
     return true;
@@ -571,7 +576,7 @@ function fillPick(team, p, what = 'all') {
   if (what === 'all' || what === 'champ') { p.c = rollChamp(team, p); animate.add(p); }
   if (what === 'all' || what === 'runes') p.ru = rollRunes();
   if (what === 'all' || what === 'sums') p.s = rollSums(p.r);
-  if (what === 'all' || what === 'build' || (what === 'champ' && (p.c === 'Cassiopeia' || p.it?.length === 6 && !BOOTS.includes(p.it[0])))) p.it = rollBuild(p.c);
+  if (what === 'all' || what === 'build' || (what === 'champ' && (p.c === 'Cassiopeia' || p.it?.length && !p.it.some(id => BOOTS.includes(id))))) p.it = rollBuild(p.c, p.r);
   if (what === 'all' || what === 'defi') p.d = opts().defis ? rollDefi() : null;
   if (p.c) drawn.add(p.c);
 }
